@@ -1,0 +1,11 @@
+{
+    "black": [
+        "Dark0.png"
+    ],
+    "white": [
+        "Light0.png"
+    ],
+    "board": "Board.png",
+    "board_resize": false,
+    "line_color": "black"
+}

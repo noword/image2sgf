@@ -1,0 +1,12 @@
+{
+    "black": [
+        "blackStone.png"
+    ],
+    "white": [
+        "whiteStone.png"
+    ],
+    "board": "badukpan4.png",
+    "board_resize": false,
+    "line_color": "black",
+    "scaling_ratio":1.1
+}

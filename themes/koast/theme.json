@@ -1,0 +1,11 @@
+{
+    "black": [
+        "B_stone.png"
+    ],
+    "white": [
+        "W_stone.png"
+    ],
+    "board": "board.png",
+    "board_resize": true,
+    "line_color": "black"
+}

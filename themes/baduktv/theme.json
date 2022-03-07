@@ -1,0 +1,18 @@
+{
+    "black": [
+        "glass_black.png",
+        "glass_black2.png",
+        "glass_black3.png",
+        "glass_black4.png"
+    ],
+    "white": [
+        "glass_white.png",
+        "glass_white2.png",
+        "glass_white3.png"
+    ],
+    "board": "goban_texture_smooth.png",
+    "scaling_ratio": 1.25,
+    "adjust_ratio": 0.28,
+    "board_resize": true,
+    "line_color": "black"
+}

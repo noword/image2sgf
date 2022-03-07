@@ -1,0 +1,13 @@
+{
+    "black": [
+        "glass_black.png"
+    ],
+    "white": [
+        "glass_white.png"
+    ],
+    "scaling_ratio": 2,
+    "adjust_ratio": 0.1,
+    "board": "goban_texture_fancy_orange.png",
+    "board_resize": true,
+    "line_color": "black"
+}

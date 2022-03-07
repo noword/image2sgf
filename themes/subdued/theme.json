@@ -1,0 +1,11 @@
+{
+    "black": [
+        "black_stone.png"
+    ],
+    "white": [
+        "white_stone.png"
+    ],
+    "board": "subdued_board.png",
+    "board_resize": false,
+    "line_color": "black"
+}

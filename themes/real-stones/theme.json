@@ -1,0 +1,15 @@
+{
+    "black": [
+        "0.png"
+    ],
+    "white": [
+        "1.png",
+        "2.png",
+        "3.png",
+        "4.png",
+        "5.png"
+    ],
+    "board": "board1.png",
+    "board_resize": false,
+    "line_color": "black"
+}
