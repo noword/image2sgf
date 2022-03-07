@@ -10,6 +10,7 @@ import torchvision
 from misc import BoxPostion
 import cv2
 import numpy as np
+import os
 
 
 def get_4corners(boxes):
@@ -26,23 +27,18 @@ def get_4corners(boxes):
     return boxes[[top_left, top_right, bottom_left, bottom_right], :]
 
 
-if __name__ == '__main__':
-    pil_image = Image.open(sys.argv[1])
+def predict_demo(model, pil_image):
     img = T.ToTensor()(pil_image)
-
-    model = get_board_model()
-    model.load_state_dict(torch.load('weiqi_board.pth', map_location=torch.device('cpu')))
-    model.eval()
     target = model(img.unsqueeze(0))[0]
     print(target)
 
     nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.1)
     boxes = target['boxes'].detach()[nms]
-
     boxes = get_4corners(boxes)
 
     fig, (ax0, ax1) = plt.subplots(ncols=2)
-    ax0.imshow(img.permute(1, 2, 0))
+
+    ax0.imshow(pil_image)
     for box in boxes:
         ax0.add_patch(Rectangle((box[0], box[1]),
                                 box[2] - box[0],
@@ -82,3 +78,21 @@ if __name__ == '__main__':
                                     ))
 
     plt.show()
+
+
+if __name__ == '__main__':
+    model = get_board_model()
+    model.load_state_dict(torch.load('weiqi_board.pth', map_location=torch.device('cpu')))
+    model.eval()
+
+    if len(sys.argv) > 1:
+        pil_image = Image.open(sys.argv[1])
+        predict_demo(model, pil_image)
+    else:
+        count = 0
+        while True:
+            name = f'{count}.jpg'
+            if not os.path.exists(name):
+                break
+            predict_demo(model, Image.open(name))
+            count += 1
