@@ -50,7 +50,8 @@ class GogameDataset(torch.utils.data.Dataset):
         end = random.randint(max(1, int(num_plays * 0.8)), len(plays))
         start = None if bool(random.getrandbits(1)) else random.randint(1, end)
         start_number = None if bool(random.getrandbits(1)) else 1
-        img, labels, boxes = gig.get_game_image(self.sgfs[idx], 1024, start_number, start, end)
+        board_rate = random.uniform(0.8, 0.94)
+        img, labels, boxes = gig.get_game_image(self.sgfs[idx], 1024, start_number, start, end, board_rate)
         boxes = torch.as_tensor(np.array(boxes), dtype=torch.float32)
         target = {'labels': torch.as_tensor(labels, dtype=torch.int64),
                   'boxes': boxes,
@@ -63,7 +64,6 @@ class GogameDataset(torch.utils.data.Dataset):
         if self.transforms is not None:
             img, target = self.transforms(img, target)
 
-        print(target['labels'])
         gc.collect()
         return img, target
 

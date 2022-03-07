@@ -33,12 +33,24 @@ def predict_demo(model, pil_image):
     print(target)
 
     nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.1)
-    boxes = target['boxes'].detach()[nms]
-    boxes = get_4corners(boxes)
+    _boxes = target['boxes'].detach()[nms]
+    _labels = target['labels'].detach()[nms]
+    assert len(set(_labels)) == 4
+
+    print(_boxes)
+    boxes = get_4corners(_boxes)
+    print(boxes)
 
     fig, (ax0, ax1) = plt.subplots(ncols=2)
 
     ax0.imshow(pil_image)
+    for box in _boxes:
+        ax0.add_patch(Rectangle((box[0], box[1]),
+                                box[2] - box[0],
+                                box[3] - box[1],
+                                linewidth=1,
+                                edgecolor='k',
+                                facecolor='none'))
     for box in boxes:
         ax0.add_patch(Rectangle((box[0], box[1]),
                                 box[2] - box[0],
@@ -81,7 +93,7 @@ def predict_demo(model, pil_image):
 
 
 if __name__ == '__main__':
-    model = get_board_model()
+    model = get_board_model(thresh=0.5)
     model.load_state_dict(torch.load('weiqi_board.pth', map_location=torch.device('cpu')))
     model.eval()
 

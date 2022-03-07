@@ -25,15 +25,15 @@ def get_4points_from_box(x0, y0, x1, y1):
 
 
 class BoxPostion(GridPosition):
-    def __init__(self, width, size):
-        super(BoxPostion, self).__init__(width, size)
+    def __init__(self, width, size, board_rate=0.8):
+        super(BoxPostion, self).__init__(width, size, board_rate)
         self._boxes = []
         half_grid_size = self.grid_size / 2
         for row in self._grid_pos:
-            self._boxes.append([[x - half_grid_size,
-                                 y - half_grid_size,
-                                 x + half_grid_size,
-                                 y + half_grid_size] for x, y in row])
+            self._boxes.append([[max(x - half_grid_size, 0),
+                                 max(y - half_grid_size, 0),
+                                 min(x + half_grid_size, width),
+                                 min(y + half_grid_size, width)] for x, y in row])
 
     @property
     def boxes(self):

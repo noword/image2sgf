@@ -7,10 +7,10 @@ from misc import BoxPostion
 
 
 class BoardGenerator(GameImageGenerator):
-    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None):
-        img = super(BoardGenerator, self).get_game_image(sgf_path, img_size, start_number, start, end)
+    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, board_rate=0.8):
+        img = super(BoardGenerator, self).get_game_image(sgf_path, img_size, start_number, start, end, board_rate)
 
-        box_pos = BoxPostion(self.DEFAULT_WIDTH, 19)
+        box_pos = BoxPostion(self.DEFAULT_WIDTH, 19, board_rate)
         labels = list(range(1, 5))
         boxes = np.array([box_pos[18][0],  # top left
                           box_pos[18][18],  # top right
@@ -33,10 +33,12 @@ def get_stone_mask_box(img):
 
 
 class GogameGenerator(GameImageGenerator):
-    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None):
+    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, board_rate=0.8):
         if img_size != self.DEFAULT_WIDTH:
             self.DEFAULT_WIDTH = img_size
             self.font = ImageFont.truetype(self.theme['font'], int(self.DEFAULT_WIDTH * 0.02))
+
+        self.BOARD_RATE = board_rate
 
         board, plays = self._get_sgf_info(sgf_path, end)
         assert board.side == 19
@@ -44,11 +46,11 @@ class GogameGenerator(GameImageGenerator):
         if end is None:
             end = len(plays)
 
-        grid_pos = GridPosition(self.DEFAULT_WIDTH, board.side)
+        grid_pos = GridPosition(self.DEFAULT_WIDTH, board.side, board_rate)
 
-        board_image = self.get_board_image(board.side).copy()
+        board_image = self.get_board_image(board.side, board_rate).copy()
 
-        stone_offset = int(self.get_stone_image('b', board.side).size[0] // 2 // self.theme['scaling_ratio'])
+        stone_offset = int(self.get_stone_image('b', board.side, board_rate).size[0] // 2 // self.theme['scaling_ratio'])
         stone_offset += int(stone_offset * self.theme['adjust_ratio'])
 
         draw = ImageDraw.ImageDraw(board_image)

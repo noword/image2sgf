@@ -17,12 +17,12 @@ def main(pth_name, max_hands=361, device=None):
         model.load_state_dict(torch.load(pth_name, map_location=device))
     model.to(device)
 
-    _dataset = RandomBoardDataset(500, max_hands=max_hands, transforms=get_transform(train=True))
+    _dataset = RandomBoardDataset(1000, max_hands=max_hands, transforms=get_transform(train=True))
     indices = torch.randperm(len(_dataset)).tolist()
     dataset = torch.utils.data.Subset(_dataset, indices[:-50])
     dataset_test = torch.utils.data.Subset(_dataset, indices[-50:])
     data_loader = torch.utils.data.DataLoader(dataset,
-                                              batch_size=5,
+                                              batch_size=1,
                                               shuffle=True,
                                               num_workers=1,
                                               collate_fn=utils.collate_fn)
@@ -43,7 +43,7 @@ def main(pth_name, max_hands=361, device=None):
     for epoch in range(num_epochs):
         # torch.cuda.empty_cache()
         # train for one epoch, printing every 10 iterations
-        train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
+        train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=50)
         # update the learning rate
         lr_scheduler.step()
         # evaluate on the test dataset

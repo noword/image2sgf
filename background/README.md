@@ -1,1 +1,1 @@
-Put some jpg pictures in here.
+Put some jpg pictures here.

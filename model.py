@@ -26,10 +26,11 @@ def get_model(thresh=0.05):
                                    box_score_thresh=thresh)
 
 
-def get_board_model():
+def get_board_model(thresh=0.05):
     return fasterrcnn_resnet50_fpn(pretrained=False,
                                    num_classes=4 + 1,
-                                   box_detections_per_img=12)
+                                   box_detections_per_img=8,
+                                   box_score_thresh=thresh)
 
 
 if __name__ == '__main__':
