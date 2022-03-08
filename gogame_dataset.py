@@ -132,8 +132,8 @@ class GogameDataset(torch.utils.data.Dataset):
 
 
 class RandomGogameDataset(GogameDataset):
-    def __init__(self, initvar=1000, max_hands=361, transforms=None):
-        self.max_hands = max_hands
+    def __init__(self, initvar=1000, hands_num=(1, 361), transforms=None):
+        self.hands_num = hands_num
         super(RandomGogameDataset, self).__init__(initvar=initvar, transforms=transforms)
 
     def _initsgfs(self, var):
@@ -142,7 +142,7 @@ class RandomGogameDataset(GogameDataset):
     @property
     def _generator(self):
         theme = self.themes[random.randint(0, len(self.themes) - 1)]
-        return RandomGogameGenerator(max_hands=self.max_hands, theme=theme, with_coordinates=bool(random.getrandbits(1)))
+        return RandomGogameGenerator(hands_num=self.hands_num, theme=theme, with_coordinates=bool(random.getrandbits(1)))
 
 
 class RandomBoardDataset(RandomGogameDataset):
@@ -152,7 +152,7 @@ class RandomBoardDataset(RandomGogameDataset):
     @property
     def _generator(self):
         theme = self.themes[random.randint(0, len(self.themes) - 1)]
-        return RandomBoardGenerator(max_hands=self.max_hands, theme=theme, with_coordinates=bool(random.getrandbits(1)))
+        return RandomBoardGenerator(hands_num=self.hands_num, theme=theme, with_coordinates=bool(random.getrandbits(1)))
 
 
 if __name__ == '__main__':

@@ -23,7 +23,7 @@ class Theme:
                     self._theme[key] = os.path.join(_path, value)
 
         if 'font' not in self._theme:
-            self._theme['font'] = './themes/DroidSansMono.ttf'
+            self._theme['font'] = './themes/NotoSansMono-Regular.ttf'
 
         if 'scaling_ratio' not in self._theme:
             self._theme['scaling_ratio'] = 1

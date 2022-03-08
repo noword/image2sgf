@@ -134,16 +134,16 @@ STONE_INDEX = GenStoneIndex()
 
 
 class RandomGenerator:
-    def __init__(self, max_hands=361, *args, **kwargs):
+    def __init__(self, hands_num=(1, 361), *args, **kwargs):
         super(RandomGenerator, self).__init__(*args, **kwargs)
         self._board = None
         self._plays = None
-        self.max_hands = max_hands
+        self.hands_num = hands_num
         self.set_random_scaling_ratio()
 
     def set_random_scaling_ratio(self):
         stone_mask, box = get_stone_mask_box(self.get_stone_image('b', 19))
-        gp = GridPosition(self.DEFAULT_WIDTH, 19)
+        gp = GridPosition(self.DEFAULT_WIDTH, 19, self.BOARD_RATE)
         self.theme._theme['scaling_ratio'] *= random.uniform(1, (gp.grid_size - 3) / (box[2] - box[0]))
 
     def _get_sgf_info(self, sgf_path, end=None):
@@ -151,7 +151,7 @@ class RandomGenerator:
             self._board = Board(19)
             self._plays = []
 
-            num = random.randint(1, self.max_hands)
+            num = random.randint(*self.hands_num)
             stone_num = 19 * 19 * 2
             samples = list(range(stone_num)) * (num // stone_num + 1)
             for i in random.sample(samples, num):

@@ -27,6 +27,9 @@ def get_4corners(boxes):
     return boxes[[top_left, top_right, bottom_left, bottom_right], :]
 
 
+DEFAULT_IMAGE_SIZE = 1024
+
+
 def predict_demo(model, pil_image):
     img = T.ToTensor()(pil_image)
     target = model(img.unsqueeze(0))[0]
@@ -59,8 +62,7 @@ def predict_demo(model, pil_image):
                                 edgecolor='g',
                                 facecolor='none'))
 
-    size = 1024
-    box_pos = BoxPostion(size, 19)
+    box_pos = BoxPostion(DEFAULT_IMAGE_SIZE, 19)
     startpoints = boxes[:, :2].tolist()
     endpoints = [box_pos[18][0][:2],  # top left
                  box_pos[18][18][:2],  # top right
@@ -69,7 +71,7 @@ def predict_demo(model, pil_image):
                  ]
 
     transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
-    _img = cv2.warpPerspective(np.array(pil_image), transform, (size, size))
+    _img = cv2.warpPerspective(np.array(pil_image), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
 
     ax1.imshow(_img)
     ax1.add_patch(Rectangle((box_pos.x0, box_pos.y0),

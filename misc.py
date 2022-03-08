@@ -1,4 +1,5 @@
 from sgf2img import GridPosition
+import numpy as np
 
 
 def get_xy(idx):
@@ -41,3 +42,9 @@ class BoxPostion(GridPosition):
 
     def __getitem__(self, index):
         return self._boxes[index]
+
+
+class NpBoxPostion(BoxPostion):
+    def __init__(self, *args, **kwargs):
+        super(NpBoxPostion, self).__init__(*args, **kwargs)
+        self._boxes = np.array(self._boxes)

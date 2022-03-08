@@ -6,7 +6,7 @@ from engine import train_one_epoch, evaluate
 import utils
 
 
-def main(pth_name, max_hands=361, batch_size=5, device=None):
+def main(pth_name, hands_num=(1, 361), batch_size=5, device=None):
     if device:
         device = torch.device(device)
     else:
@@ -17,7 +17,7 @@ def main(pth_name, max_hands=361, batch_size=5, device=None):
         model.load_state_dict(torch.load(pth_name, map_location=device))
     model.to(device)
 
-    _dataset = RandomBoardDataset(1000, max_hands=max_hands, transforms=get_transform(train=True))
+    _dataset = RandomBoardDataset(1000, hands_num=hands_num, transforms=get_transform(train=True))
     indices = torch.randperm(len(_dataset)).tolist()
     dataset = torch.utils.data.Subset(_dataset, indices[:-50])
     dataset_test = torch.utils.data.Subset(_dataset, indices[-50:])
