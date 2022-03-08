@@ -6,7 +6,7 @@ from engine import train_one_epoch, evaluate
 import utils
 
 
-def main(pth_name, max_hands=361, device=None):
+def main(pth_name, max_hands=361, batch_size=5, device=None):
     if device:
         device = torch.device(device)
     else:
@@ -22,7 +22,7 @@ def main(pth_name, max_hands=361, device=None):
     dataset = torch.utils.data.Subset(_dataset, indices[:-50])
     dataset_test = torch.utils.data.Subset(_dataset, indices[-50:])
     data_loader = torch.utils.data.DataLoader(dataset,
-                                              batch_size=1,
+                                              batch_size=batch_size,
                                               shuffle=True,
                                               num_workers=1,
                                               collate_fn=utils.collate_fn)
@@ -55,4 +55,5 @@ def main(pth_name, max_hands=361, device=None):
 
 
 if __name__ == '__main__':
-    main('weiqi_board.pth')
+    # my graphics card only has 4G memory, batch_size had to be set to 1
+    main('weiqi_board.pth', batch_size=1)

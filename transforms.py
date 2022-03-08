@@ -4,7 +4,7 @@ import torch
 import torchvision
 from torch import nn, Tensor
 from torchvision.transforms import functional as F
-from torchvision.transforms import transforms as T, InterpolationMode
+from torchvision.transforms import transforms as T
 
 
 def _flip_coco_person_keypoints(kps, width):
@@ -17,7 +17,7 @@ def _flip_coco_person_keypoints(kps, width):
     return flipped_data
 
 
-class Compose:
+class Compose(object):
     def __init__(self, transforms):
         self.transforms = transforms
 
@@ -28,13 +28,12 @@ class Compose:
 
 
 class RandomHorizontalFlip(T.RandomHorizontalFlip):
-    def forward(
-        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
-    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+    def forward(self, image: Tensor,
+                target: Optional[Dict[str, Tensor]] = None) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
         if torch.rand(1) < self.p:
             image = F.hflip(image)
             if target is not None:
-                _, _, width = F.get_dimensions(image)
+                width, _ = F.get_image_size(image)
                 target["boxes"][:, [0, 2]] = width - target["boxes"][:, [2, 0]]
                 if "masks" in target:
                     target["masks"] = target["masks"].flip(-1)
@@ -45,10 +44,17 @@ class RandomHorizontalFlip(T.RandomHorizontalFlip):
         return image, target
 
 
+class ToTensor(nn.Module):
+    def forward(self, image: Tensor,
+                target: Optional[Dict[str, Tensor]] = None) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+        image = F.pil_to_tensor(image)
+        image = F.convert_image_dtype(image)
+        return image, target
+
+
 class PILToTensor(nn.Module):
-    def forward(
-        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
-    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+    def forward(self, image: Tensor,
+                target: Optional[Dict[str, Tensor]] = None) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
         image = F.pil_to_tensor(image)
         return image, target
 
@@ -58,23 +64,15 @@ class ConvertImageDtype(nn.Module):
         super().__init__()
         self.dtype = dtype
 
-    def forward(
-        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
-    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+    def forward(self, image: Tensor,
+                target: Optional[Dict[str, Tensor]] = None) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
         image = F.convert_image_dtype(image, self.dtype)
         return image, target
 
 
 class RandomIoUCrop(nn.Module):
-    def __init__(
-        self,
-        min_scale: float = 0.3,
-        max_scale: float = 1.0,
-        min_aspect_ratio: float = 0.5,
-        max_aspect_ratio: float = 2.0,
-        sampler_options: Optional[List[float]] = None,
-        trials: int = 40,
-    ):
+    def __init__(self, min_scale: float = 0.3, max_scale: float = 1.0, min_aspect_ratio: float = 0.5,
+                 max_aspect_ratio: float = 2.0, sampler_options: Optional[List[float]] = None, trials: int = 40):
         super().__init__()
         # Configuration similar to https://github.com/weiliu89/caffe/blob/ssd/examples/ssd/ssd_coco.py#L89-L174
         self.min_scale = min_scale
@@ -86,19 +84,18 @@ class RandomIoUCrop(nn.Module):
         self.options = sampler_options
         self.trials = trials
 
-    def forward(
-        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
-    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+    def forward(self, image: Tensor,
+                target: Optional[Dict[str, Tensor]] = None) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
         if target is None:
             raise ValueError("The targets can't be None for this transform.")
 
         if isinstance(image, torch.Tensor):
             if image.ndimension() not in {2, 3}:
-                raise ValueError(f"image should be 2/3 dimensional. Got {image.ndimension()} dimensions.")
+                raise ValueError('image should be 2/3 dimensional. Got {} dimensions.'.format(image.ndimension()))
             elif image.ndimension() == 2:
                 image = image.unsqueeze(0)
 
-        _, orig_h, orig_w = F.get_dimensions(image)
+        orig_w, orig_h = F.get_image_size(image)
 
         while True:
             # sample an option
@@ -134,9 +131,8 @@ class RandomIoUCrop(nn.Module):
 
                 # check at least 1 box with jaccard limitations
                 boxes = target["boxes"][is_within_crop_area]
-                ious = torchvision.ops.boxes.box_iou(
-                    boxes, torch.tensor([[left, top, right, bottom]], dtype=boxes.dtype, device=boxes.device)
-                )
+                ious = torchvision.ops.boxes.box_iou(boxes, torch.tensor([[left, top, right, bottom]],
+                                                                         dtype=boxes.dtype, device=boxes.device))
                 if ious.max() < min_jaccard_overlap:
                     continue
 
@@ -153,16 +149,14 @@ class RandomIoUCrop(nn.Module):
 
 
 class RandomZoomOut(nn.Module):
-    def __init__(
-        self, fill: Optional[List[float]] = None, side_range: Tuple[float, float] = (1.0, 4.0), p: float = 0.5
-    ):
+    def __init__(self, fill: Optional[List[float]] = None, side_range: Tuple[float, float] = (1., 4.), p: float = 0.5):
         super().__init__()
         if fill is None:
-            fill = [0.0, 0.0, 0.0]
+            fill = [0., 0., 0.]
         self.fill = fill
         self.side_range = side_range
-        if side_range[0] < 1.0 or side_range[0] > side_range[1]:
-            raise ValueError(f"Invalid canvas side range provided {side_range}.")
+        if side_range[0] < 1. or side_range[0] > side_range[1]:
+            raise ValueError("Invalid canvas side range provided {}.".format(side_range))
         self.p = p
 
     @torch.jit.unused
@@ -171,19 +165,18 @@ class RandomZoomOut(nn.Module):
         # We fake the type to make it work on JIT
         return tuple(int(x) for x in self.fill) if is_pil else 0
 
-    def forward(
-        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
-    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+    def forward(self, image: Tensor,
+                target: Optional[Dict[str, Tensor]] = None) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
         if isinstance(image, torch.Tensor):
             if image.ndimension() not in {2, 3}:
-                raise ValueError(f"image should be 2/3 dimensional. Got {image.ndimension()} dimensions.")
+                raise ValueError('image should be 2/3 dimensional. Got {} dimensions.'.format(image.ndimension()))
             elif image.ndimension() == 2:
                 image = image.unsqueeze(0)
 
-        if torch.rand(1) >= self.p:
+        if torch.rand(1) < self.p:
             return image, target
 
-        _, orig_h, orig_w = F.get_dimensions(image)
+        orig_w, orig_h = F.get_image_size(image)
 
         r = self.side_range[0] + torch.rand(1) * (self.side_range[1] - self.side_range[0])
         canvas_width = int(orig_w * r)
@@ -202,11 +195,9 @@ class RandomZoomOut(nn.Module):
 
         image = F.pad(image, [left, top, right, bottom], fill=fill)
         if isinstance(image, torch.Tensor):
-            # PyTorch's pad supports only integers on fill. So we need to overwrite the colour
             v = torch.tensor(self.fill, device=image.device, dtype=image.dtype).view(-1, 1, 1)
-            image[..., :top, :] = image[..., :, :left] = image[..., (top + orig_h) :, :] = image[
-                ..., :, (left + orig_w) :
-            ] = v
+            image[..., :top, :] = image[..., :, :left] = image[..., (top + orig_h):, :] = \
+                image[..., :, (left + orig_w):] = v
 
         if target is not None:
             target["boxes"][:, 0::2] += left
@@ -216,14 +207,8 @@ class RandomZoomOut(nn.Module):
 
 
 class RandomPhotometricDistort(nn.Module):
-    def __init__(
-        self,
-        contrast: Tuple[float] = (0.5, 1.5),
-        saturation: Tuple[float] = (0.5, 1.5),
-        hue: Tuple[float] = (-0.05, 0.05),
-        brightness: Tuple[float] = (0.875, 1.125),
-        p: float = 0.5,
-    ):
+    def __init__(self, contrast: Tuple[float] = (0.5, 1.5), saturation: Tuple[float] = (0.5, 1.5),
+                 hue: Tuple[float] = (-0.05, 0.05), brightness: Tuple[float] = (0.875, 1.125), p: float = 0.5):
         super().__init__()
         self._brightness = T.ColorJitter(brightness=brightness)
         self._contrast = T.ColorJitter(contrast=contrast)
@@ -231,12 +216,11 @@ class RandomPhotometricDistort(nn.Module):
         self._saturation = T.ColorJitter(saturation=saturation)
         self.p = p
 
-    def forward(
-        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
-    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+    def forward(self, image: Tensor,
+                target: Optional[Dict[str, Tensor]] = None) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
         if isinstance(image, torch.Tensor):
             if image.ndimension() not in {2, 3}:
-                raise ValueError(f"image should be 2/3 dimensional. Got {image.ndimension()} dimensions.")
+                raise ValueError('image should be 2/3 dimensional. Got {} dimensions.'.format(image.ndimension()))
             elif image.ndimension() == 2:
                 image = image.unsqueeze(0)
 
@@ -261,7 +245,7 @@ class RandomPhotometricDistort(nn.Module):
                 image = self._contrast(image)
 
         if r[6] < self.p:
-            channels, _, _ = F.get_dimensions(image)
+            channels = F.get_image_num_channels(image)
             permutation = torch.randperm(channels)
 
             is_pil = F._is_pil_image(image)
@@ -271,57 +255,5 @@ class RandomPhotometricDistort(nn.Module):
             image = image[..., permutation, :, :]
             if is_pil:
                 image = F.to_pil_image(image)
-
-        return image, target
-
-
-class ScaleJitter(nn.Module):
-    """Randomly resizes the image and its bounding boxes  within the specified scale range.
-    The class implements the Scale Jitter augmentation as described in the paper
-    `"Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation" <https://arxiv.org/abs/2012.07177>`_.
-
-    Args:
-        target_size (tuple of ints): The target size for the transform provided in (height, weight) format.
-        scale_range (tuple of ints): scaling factor interval, e.g (a, b), then scale is randomly sampled from the
-            range a <= scale <= b.
-        interpolation (InterpolationMode): Desired interpolation enum defined by
-            :class:`torchvision.transforms.InterpolationMode`. Default is ``InterpolationMode.BILINEAR``.
-    """
-
-    def __init__(
-        self,
-        target_size: Tuple[int, int],
-        scale_range: Tuple[float, float] = (0.1, 2.0),
-        interpolation: InterpolationMode = InterpolationMode.BILINEAR,
-    ):
-        super().__init__()
-        self.target_size = target_size
-        self.scale_range = scale_range
-        self.interpolation = interpolation
-
-    def forward(
-        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
-    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
-        if isinstance(image, torch.Tensor):
-            if image.ndimension() not in {2, 3}:
-                raise ValueError(f"image should be 2/3 dimensional. Got {image.ndimension()} dimensions.")
-            elif image.ndimension() == 2:
-                image = image.unsqueeze(0)
-
-        _, orig_height, orig_width = F.get_dimensions(image)
-
-        r = self.scale_range[0] + torch.rand(1) * (self.scale_range[1] - self.scale_range[0])
-        new_width = int(self.target_size[1] * r)
-        new_height = int(self.target_size[0] * r)
-
-        image = F.resize(image, [new_height, new_width], interpolation=self.interpolation)
-
-        if target is not None:
-            target["boxes"][:, 0::2] *= new_width / orig_width
-            target["boxes"][:, 1::2] *= new_height / orig_height
-            if "masks" in target:
-                target["masks"] = F.resize(
-                    target["masks"], [new_height, new_width], interpolation=InterpolationMode.NEAREST
-                )
 
         return image, target

@@ -35,7 +35,7 @@ def predict_demo(model, pil_image):
     nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.1)
     _boxes = target['boxes'].detach()[nms]
     _labels = target['labels'].detach()[nms]
-    assert len(set(_labels)) == 4
+    assert len(set(_labels)) >= 4
 
     print(_boxes)
     boxes = get_4corners(_boxes)

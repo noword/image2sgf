@@ -15,7 +15,9 @@ class ToTensor(nn.Module):
 def get_transform(train=False):
     transforms = []
     transforms.append(ToTensor())
-    transforms.append(RandomBackground())
+    if train:
+        transforms.append(RandomBackground())
+        transforms.append(T.RandomPhotometricDistort(hue=0))
     return T.Compose(transforms)
 
 
