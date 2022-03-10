@@ -1,4 +1,4 @@
-from model import get_board_model, get_stone_model, get_transform
+from model import get_board_model, get_stone_model, get_board_model_resnet50
 import torch
 import torchvision.transforms as T
 import torchvision.transforms.functional as F
@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import sys
 from PIL import Image
+from datetime import datetime
+import argparse
 
 
 DEFAULT_IMAGE_SIZE = 1024
@@ -48,18 +50,26 @@ def get_board_image(pil_image: Image):
 
 
 def classifier_board(image: np.array):
-    board = [[None] * 19 for _ in range(19)]
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
     img = T.ToTensor()(image)
+    imgs = torch.empty((19 * 19, 3, int(box_pos.grid_size), int(box_pos.grid_size)))
+
     for x in range(19):
         for y in range(19):
             x0, y0, x1, y1 = box_pos[x][y].astype(int)
-            result = stone_model(img[:, y0:y1, x0:x1].unsqueeze(0))[0]
-            board[x][y] = result.argmax()
+            imgs[x + y * 19] = img[:, y0:y1, x0:x1]
+    results = stone_model(imgs)
+
+    board = [[None] * 19 for _ in range(19)]
+    for x in range(19):
+        for y in range(19):
+            board[x][y] = results[x + y * 19].argmax()
+
     return board
 
 
-def demo(pil_img):
+def demo(img_name):
+    pil_img = Image.open(img_name)
     _img, boxes = get_board_image(pil_img)
     board = classifier_board(_img)
 
@@ -87,8 +97,7 @@ def demo(pil_img):
     ax2.imshow(_img)
     for y in range(19):
         for x in range(19):
-            label = board[x][y]
-            color = label >> 1
+            color = board[x][y] >> 1
             if color > 0:
                 _x, _y = box_pos._grid_pos[x][y]
                 ax2.plot(_x, _y, 'go' if color == 1 else 'b^', mfc='none')
@@ -96,7 +105,31 @@ def demo(pil_img):
     plt.show()
 
 
-if __name__ == '__main__':
+S = 'abcdefghijklmnopqrs'
+
+
+def img2sgf(img_name, sgf_name):
+    _img, boxes = get_board_image(Image.open(img_name))
+    board = classifier_board(_img)
+    blacks = []
+    whites = []
+    for y in range(19):
+        for x in range(19):
+            color = board[x][y] >> 1
+            if color == 1:
+                blacks.append(f'[{S[y]}{S[18-x]}]')
+            elif color == 2:
+                whites.append(f'[{S[y]}{S[18-x]}]')
+
+    with open(sgf_name, 'w') as fp:
+        fp.write(f'(;GM[1]FF[4]CA[UTF-8]AP[img2sgf]KM[7.5]SZ[19]DT[{datetime.now().strftime("%Y-%m-%d")}]')
+        fp.write('AB' + ''.join(blacks))
+        fp.write('AW' + ''.join(whites))
+
+
+def get_models():
+    # board_model = get_board_model_resnet50(thresh=0.5)
+    # board_model.load_state_dict(torch.load('weiqi_board_resnet50.pth', map_location=torch.device('cpu')))
     board_model = get_board_model(thresh=0.5)
     board_model.load_state_dict(torch.load('weiqi_board.pth', map_location=torch.device('cpu')))
     board_model.eval()
@@ -105,4 +138,23 @@ if __name__ == '__main__':
     stone_model.load_state_dict(torch.load('weiqi_stone.pth', map_location=torch.device('cpu')))
     stone_model.eval()
 
-    demo(Image.open(sys.argv[1]))
+    return board_model, stone_model
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('image_name', action='store', nargs='?', help='input image file name')
+    parser.add_argument('sgf_name', action='store', nargs='?', help='output sgf file name')
+    parser.add_argument('--demo', action='store_true', default=False, help='show the action')
+    args = parser.parse_args()
+
+    board_model, stone_model = get_models()
+
+    if args.image_name:
+        if args.sgf_name:
+            img2sgf(args.image_name, args.sgf_name)
+
+        if args.demo:
+            demo(args.image_name)
+    else:
+        parser.print_help()
