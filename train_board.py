@@ -6,7 +6,7 @@ from engine import train_one_epoch, evaluate
 import utils
 
 
-def main(pth_name, hands_num=(1, 361), batch_size=5, data_size=1000, device=None):
+def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=1000, device=None):
     if device:
         device = torch.device(device)
     else:
@@ -24,7 +24,7 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, data_size=1000, device=None
     data_loader = torch.utils.data.DataLoader(dataset,
                                               batch_size=batch_size,
                                               shuffle=True,
-                                              num_workers=1,
+                                              num_workers=num_workers,
                                               collate_fn=utils.collate_fn)
 
     data_loader_test = torch.utils.data.DataLoader(dataset_test,
@@ -34,11 +34,12 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, data_size=1000, device=None
                                                    collate_fn=utils.collate_fn)
 
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.Adam(params, lr=0.0001)
-    # optimizer = torch.optim.SGD(params, lr=0.0001, momentum=0.9, weight_decay=0.0005)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
+    # optimizer = torch.optim.Adam(params, lr=0.0001)
+    optimizer = torch.optim.SGD(params, lr=0.0002, momentum=0.9, weight_decay=0.0001)
+    #lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=(16, 22), gamma=0.1)
 
-    num_epochs = 10
+    num_epochs = 26
     # torch.cuda.memory_summary(device=None, abbreviated=False)
     for epoch in range(num_epochs):
         # torch.cuda.empty_cache()
@@ -49,11 +50,10 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, data_size=1000, device=None
         # evaluate on the test dataset
         evaluator = evaluate(model, data_loader_test, device=device)
         torch.save(model.state_dict(), pth_name)
-        _dataset.initseed()
 
     print("That's it!")
 
 
 if __name__ == '__main__':
     # my graphics card only has 4G memory, batch_size had to be set to 3
-    main('weiqi_board.pth', hands_num=(1, 150), batch_size=3, data_size=260)
+    main('weiqi_board.pth', hands_num=(1, 361), batch_size=2, num_workers=1, data_size=350)

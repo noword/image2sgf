@@ -36,6 +36,7 @@ def get_transform(train=False):
     if train:
         transforms.append(RandomBackground())
         transforms.append(T.RandomPhotometricDistort())
+        transforms.append(GaussianBlur((3, 9)))
     return T.Compose(transforms)
 
 

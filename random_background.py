@@ -35,7 +35,8 @@ def Perspective(target: Optional[Dict[str, torch.Tensor]], startpoints: Sequence
             target['boxes'][i] = torch.as_tensor([min_x, min_y, max_x, max_y], dtype=torch.float32)
 
     if 'area' in target:
-        target['area'] = (target['boxes'][:, 3] - target['boxes'][:, 1]) * (target['boxes'][:, 2] - target['boxes'][:, 0])
+        boxes = target['boxes']
+        target['area'] = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
 
     return target
 

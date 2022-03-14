@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
     board_model, stone_model = get_models()
 
-    if args.image_name:
+    if args.image_name and (args.sgf_name or args.demo):
         if args.sgf_name:
             img2sgf(args.image_name, args.sgf_name)
 
