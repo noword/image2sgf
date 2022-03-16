@@ -63,7 +63,9 @@ class GogameDataset(torch.utils.data.Dataset):
 
         if self.transforms is not None:
             img, target = self.transforms(img, target)
-
+            img = torch.where(img > torch.FloatTensor([1]),
+                              torch.FloatTensor([1]),
+                              img)
         gc.collect()
         return img, target
 
@@ -91,6 +93,11 @@ class GogameDataset(torch.utils.data.Dataset):
 
         def _show(event):
             nonlocal count
+
+            if event and event.key == 'escape':
+                plt.close('all')
+                return
+
             ax.clear()
 
             img, target = self[count]

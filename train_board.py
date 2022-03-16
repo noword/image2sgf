@@ -48,8 +48,9 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
         # update the learning rate
         lr_scheduler.step()
         # evaluate on the test dataset
-        evaluator = evaluate(model, data_loader_test, device=device)
+        evaluate(model, data_loader_test, device=device)
         torch.save(model.state_dict(), pth_name)
+        _dataset.initseed()
 
     print("That's it!")
 

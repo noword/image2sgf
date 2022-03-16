@@ -69,7 +69,7 @@ class RandomBackground(torch.nn.Module):
         perspective = random.random() < self.perspectiv_probability
         if perspective:
             # perspective
-            startpoints, endpoints = T.RandomPerspective.get_params(img_w, img_h, 0.2)
+            startpoints, endpoints = T.RandomPerspective.get_params(img_w, img_h, 0.4)
             img = F.perspective(img, startpoints, endpoints)
             target = Perspective(target, startpoints, endpoints)
 

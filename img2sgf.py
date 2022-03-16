@@ -20,20 +20,22 @@ DEFAULT_IMAGE_SIZE = 1024
 def get_board_image(pil_image: Image):
     img = T.ToTensor()(pil_image)
     target = board_model(img.unsqueeze(0))[0]
-    print(target)
+    # print(target)
     nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.1)
     _boxes = target['boxes'].detach()[nms]
     _labels = target['labels'].detach()[nms]
+    _scores = target['scores'].detach()[nms]
     assert len(set(_labels)) >= 4
 
-    boxes = [None] * 4
+    boxes = np.zeros((4, 4))
     for i, box in enumerate(_boxes):
         label = _labels[i] - 1
-        if boxes[label] is None:
+        if np.count_nonzero(boxes[label]) == 0:
             boxes[label] = box.numpy()
+            print(int(label), float(_scores[i]), boxes[label])
 
-    boxes = np.array(boxes)
-    print(boxes)
+    # print(boxes)
+    assert [0] * 4 not in boxes
 
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
     startpoints = boxes[:, :2].tolist()
@@ -54,18 +56,15 @@ def classifier_board(image: np.array):
     img = T.ToTensor()(image)
     imgs = torch.empty((19 * 19, 3, int(box_pos.grid_size), int(box_pos.grid_size)))
 
-    for x in range(19):
-        for y in range(19):
-            x0, y0, x1, y1 = box_pos[x][y].astype(int)
+    for y in range(19):
+        for x in range(19):
+            x0, y0, x1, y1 = box_pos[y][x].astype(int)
             imgs[x + y * 19] = img[:, y0:y1, x0:x1]
+
     results = stone_model(imgs)
-
-    board = [[None] * 19 for _ in range(19)]
-    for x in range(19):
-        for y in range(19):
-            board[x][y] = results[x + y * 19].argmax()
-
-    return board
+    results = results.argmax(1).reshape(19, 19)
+    print(results.flip(0))
+    return results
 
 
 def demo(img_name):
@@ -74,6 +73,9 @@ def demo(img_name):
     board = classifier_board(_img)
 
     fig, (ax0, ax1, ax2) = plt.subplots(ncols=3)
+    fig.canvas.manager.set_window_title('image to sgf demo')
+
+    ax0.set_title('detect 4 corners')
     ax0.imshow(pil_img)
     for box in boxes:
         ax0.add_patch(Rectangle((box[0], box[1]),
@@ -83,6 +85,7 @@ def demo(img_name):
                                 edgecolor='g',
                                 facecolor='none'))
 
+    ax1.set_title('perspective correct the board')
     ax1.imshow(_img)
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
     for _boxes in box_pos:
@@ -94,13 +97,15 @@ def demo(img_name):
                                     edgecolor='b',
                                     facecolor='none'
                                     ))
+    ax2.set_title('classify stones')
     ax2.imshow(_img)
     for y in range(19):
         for x in range(19):
+            sign = board[x][y] & 1
             color = board[x][y] >> 1
             if color > 0:
                 _x, _y = box_pos._grid_pos[x][y]
-                ax2.plot(_x, _y, 'go' if color == 1 else 'b^', mfc='none')
+                ax2.plot(_x, _y, 'gs' if color == 1 else 'b^', mfc='none')  # if sign else None)
 
     plt.show()
 
@@ -130,7 +135,7 @@ def img2sgf(img_name, sgf_name):
 def get_models():
     # board_model = get_board_model_resnet50(thresh=0.5)
     # board_model.load_state_dict(torch.load('weiqi_board_resnet50.pth', map_location=torch.device('cpu')))
-    board_model = get_board_model(thresh=0.5)
+    board_model = get_board_model(thresh=0.4)
     board_model.load_state_dict(torch.load('weiqi_board.pth', map_location=torch.device('cpu')))
     board_model.eval()
 
@@ -145,16 +150,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('image_name', action='store', nargs='?', help='input image file name')
     parser.add_argument('sgf_name', action='store', nargs='?', help='output sgf file name')
-    parser.add_argument('--demo', action='store_true', default=False, help='show the action')
     args = parser.parse_args()
 
     board_model, stone_model = get_models()
 
-    if args.image_name and (args.sgf_name or args.demo):
+    if args.image_name:
         if args.sgf_name:
             img2sgf(args.image_name, args.sgf_name)
-
-        if args.demo:
+        else:
             demo(args.image_name)
     else:
         parser.print_help()
