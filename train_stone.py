@@ -94,10 +94,14 @@ def main(pth_name, epochs=10, batch_size=5, device=None):
         model.load_state_dict(torch.load(pth_name, map_location=device))
     model.to(device)
 
-    _dataset = StoneDataset(transforms=get_stone_transform(True))
+    _dataset = StoneDataset(theme_path='./themes',
+                            data_path='stone_data',
+                            transforms=get_stone_transform(True))
+
     indices = torch.randperm(len(_dataset)).tolist()
-    dataset = torch.utils.data.Subset(_dataset, indices[:-500])
-    dataset_test = torch.utils.data.Subset(_dataset, indices[-500:])
+    test_num = int(len(_dataset) * 0.1)
+    dataset = torch.utils.data.Subset(_dataset, indices[:-test_num])
+    dataset_test = torch.utils.data.Subset(_dataset, indices[-test_num:])
     data_loader = torch.utils.data.DataLoader(dataset,
                                               batch_size=batch_size,
                                               shuffle=True,

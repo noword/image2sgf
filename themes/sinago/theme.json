@@ -1,0 +1,12 @@
+{
+    "black": [
+        "bs100.png"
+    ],
+    "white": [
+        "ws100.png"
+    ],
+    "board": "Boardb.bmp",
+    "board_resize": false,
+    "line_color": "black",
+    "scaling_ratio":1.1
+}

@@ -12,6 +12,7 @@ import sys
 from PIL import Image
 from datetime import datetime
 import argparse
+import os
 
 
 DEFAULT_IMAGE_SIZE = 1024
@@ -51,7 +52,7 @@ def get_board_image(pil_image: Image):
     return _img, boxes
 
 
-def classifier_board(image: np.array):
+def classifier_board(image: np.array, save_images=False):
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
     img = T.ToTensor()(image)
     imgs = torch.empty((19 * 19, 3, int(box_pos.grid_size), int(box_pos.grid_size)))
@@ -61,18 +62,43 @@ def classifier_board(image: np.array):
             x0, y0, x1, y1 = box_pos[y][x].astype(int)
             imgs[x + y * 19] = img[:, y0:y1, x0:x1]
 
-    results = stone_model(imgs)
-    results = results.argmax(1).reshape(19, 19)
+    results = stone_model(imgs).argmax(1)
+
+    if save_images:
+        save_all_images(imgs, results)
+
+    results = results.reshape(19, 19)
     print(results.flip(0))
+
     return results
 
 
-def demo(img_name):
+def save_all_images(images, labels):
+    path = 'stones'
+    num_classes = 6
+    counts = [0] * num_classes
+
+    for i in range(num_classes):
+        try:
+            os.makedirs(f'{path}/{i}')
+        except BaseException:
+            pass
+        while os.path.exists(f'{path}/{counts[i]}.jpg'):
+            counts[i] += 1
+
+    for i, img in enumerate(images):
+        label = int(labels[i])
+        T.ToPILImage()(img).save(f'{path}/{label}/{counts[label]}.jpg')
+        counts[label] += 1
+
+
+def demo(img_name, save_images=False):
     pil_img = Image.open(img_name)
     _img, boxes = get_board_image(pil_img)
-    board = classifier_board(_img)
+    board = classifier_board(_img, save_images)
 
     fig, (ax0, ax1, ax2) = plt.subplots(ncols=3)
+    plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0.1)
     fig.canvas.manager.set_window_title('image to sgf demo')
 
     ax0.set_title('detect 4 corners')
@@ -113,9 +139,9 @@ def demo(img_name):
 S = 'abcdefghijklmnopqrs'
 
 
-def img2sgf(img_name, sgf_name):
-    _img, boxes = get_board_image(Image.open(img_name))
-    board = classifier_board(_img)
+def img2sgf(img_name, sgf_name, save_images=False):
+    _img, _ = get_board_image(Image.open(img_name))
+    board = classifier_board(_img, save_images)
     blacks = []
     whites = []
     for y in range(19):
@@ -148,16 +174,14 @@ def get_models():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('image_name', action='store', nargs='?', help='input image file name')
+    parser.add_argument('image_name', action='store', nargs=1, help='input image file name')
     parser.add_argument('sgf_name', action='store', nargs='?', help='output sgf file name')
+    parser.add_argument('--save_images', action='store_true', default=False, help='save grid images')
     args = parser.parse_args()
 
     board_model, stone_model = get_models()
 
-    if args.image_name:
-        if args.sgf_name:
-            img2sgf(args.image_name, args.sgf_name)
-        else:
-            demo(args.image_name)
+    if args.sgf_name:
+        img2sgf(args.image_name[0], args.sgf_name, args.save_images)
     else:
-        parser.print_help()
+        demo(args.image_name[0], args.save_images)

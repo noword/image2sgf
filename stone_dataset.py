@@ -1,10 +1,11 @@
 import torch
 from sgf2img import GetAllThemes
 from gogame_generator import RandomBoardGenerator
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 from misc import NpBoxPostion
 import os
 import random
+import pathlib
 
 COLOR_INDEX = {None: 0, 'b': 1, 'w': 2}
 GEO = '△◯◻╳'
@@ -13,19 +14,22 @@ GEO = '△◯◻╳'
 class StoneDataset(torch.utils.data.Dataset):
     # label bits:
     # [offset]    [context]
-    # 0             with or without sign (number, letter or geometry)
-    # 1-2           00: empty
-    #               01: black
-    #               10: white
-    #
-    # item bits:
-    # [offset]    [context]
-    # 0-2           label
-    # 3-15          image index
+    # 0         with or without sign (number, letter or geometry)
+    # 1-2       00: empty
+    #           01: black
+    #           10: white
 
-    def __init__(self, theme_path='./themes', transforms=None):
+    def __init__(self, theme_path=None, data_path=None, transforms=None):
         self.transforms = transforms
         self.items = []
+
+        if theme_path:
+            self._load_theme(theme_path)
+
+        if data_path:
+            self._load_data(data_path)
+
+    def _load_theme(self, theme_path):
         for theme in GetAllThemes(theme_path).values():
             gig = RandomBoardGenerator(theme=theme, hands_num=(180, 361))
             sign_color = {'b': 'white',
@@ -61,6 +65,11 @@ class StoneDataset(torch.utils.data.Dataset):
                     self.items.append((img.crop(box_pos[x][y] + [x_offset, y_offset, x_offset, y_offset]),
                                        label))
 
+    def _load_data(self, data_path):
+        for label in range(6):
+            for path in pathlib.Path(f'{data_path}/{label}/').glob('*.jpg'):
+                self.items.append((Image.open(str(path)), label))
+
     def __len__(self):
         return len(self.items)
 
@@ -87,5 +96,7 @@ class StoneDataset(torch.utils.data.Dataset):
 
 if __name__ == '__main__':
     from model import get_stone_transform
-    d = StoneDataset(transforms=get_stone_transform(True))
+    d = StoneDataset(theme_path='themes',
+                     # data_path='stone_data',
+                     transforms=get_stone_transform(True))
     d.save_all()

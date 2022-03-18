@@ -63,9 +63,8 @@ class GogameDataset(torch.utils.data.Dataset):
 
         if self.transforms is not None:
             img, target = self.transforms(img, target)
-            img = torch.where(img > torch.FloatTensor([1]),
-                              torch.FloatTensor([1]),
-                              img)
+            img[img > 1.] = 1.
+
         gc.collect()
         return img, target
 
@@ -101,7 +100,7 @@ class GogameDataset(torch.utils.data.Dataset):
             ax.clear()
 
             img, target = self[count]
-            ax.imshow(img.permute(1, 2, 0))
+            ax.imshow((img.permute(1, 2, 0) * 255).to(torch.uint8))
 
             for i, box in enumerate(target['boxes']):
                 if target['labels'][i] <= 361:
