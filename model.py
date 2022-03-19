@@ -12,7 +12,7 @@ def get_transform(train=False):
         transforms.append(RandomBackground())
         transforms.append(T.RandomPhotometricDistort())
         transforms.append(GaussianBlur((3, 9)))
-        transforms.append(RandomRotation(degrees=45))
+        transforms.append(RandomRotation(degrees=30))
     return T.Compose(transforms)
 
 

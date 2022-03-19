@@ -28,11 +28,13 @@ def get_board_image(pil_image: Image):
     _scores = target['scores'].detach()[nms]
     assert len(set(_labels)) >= 4
 
+    min_score = 0
     boxes = np.zeros((4, 4))
     for i, box in enumerate(_boxes):
         label = _labels[i] - 1
         if np.count_nonzero(boxes[label]) == 0:
             boxes[label] = box.numpy()
+            min_score = min(min_score, _scores[i])
             print(int(label), float(_scores[i]), boxes[label])
 
     # print(boxes)
@@ -49,7 +51,7 @@ def get_board_image(pil_image: Image):
     transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
     _img = cv2.warpPerspective(np.array(pil_image), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
 
-    return _img, boxes
+    return _img, boxes, min_score
 
 
 def classifier_board(image: np.array, save_images=False):
@@ -93,17 +95,19 @@ def save_all_images(images, labels):
 
 
 def demo(img_name, save_images=False):
-    pil_img = Image.open(img_name)
-    _img, boxes = get_board_image(pil_img)
+    pil_img = Image.open(img_name).convert('RGB')
+    _img0, boxes0, min_score0 = get_board_image(pil_img)
+    _img, boxes, min_score = get_board_image(_img0)
+
     board = classifier_board(_img, save_images)
 
-    fig, (ax0, ax1, ax2) = plt.subplots(ncols=3)
-    plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0.1)
+    fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2)
+    plt.subplots_adjust(left=0, right=1, top=0.95, bottom=0, wspace=0.2, hspace=0.3)
     fig.canvas.manager.set_window_title('image to sgf demo')
 
     ax0.set_title('detect 4 corners')
     ax0.imshow(pil_img)
-    for box in boxes:
+    for box in boxes0:
         ax0.add_patch(Rectangle((box[0], box[1]),
                                 box[2] - box[0],
                                 box[3] - box[1],
@@ -111,8 +115,8 @@ def demo(img_name, save_images=False):
                                 edgecolor='g',
                                 facecolor='none'))
 
-    ax1.set_title('perspective correct the board')
-    ax1.imshow(_img)
+    ax1.set_title(f'1st perspective correct the board {min_score0}')
+    ax1.imshow(_img0)
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
     for _boxes in box_pos:
         for box in _boxes:
@@ -123,15 +127,36 @@ def demo(img_name, save_images=False):
                                     edgecolor='b',
                                     facecolor='none'
                                     ))
-    ax2.set_title('classify stones')
+    for box in boxes:
+        ax1.add_patch(Rectangle((box[0], box[1]),
+                                box[2] - box[0],
+                                box[3] - box[1],
+                                linewidth=1,
+                                edgecolor='g',
+                                facecolor='none'))
+
+    ax2.set_title(f'2nd perspective correct the board {min_score}')
     ax2.imshow(_img)
+    box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
+    for _boxes in box_pos:
+        for box in _boxes:
+            ax2.add_patch(Rectangle(box[:2],
+                                    box_pos.grid_size,
+                                    box_pos.grid_size,
+                                    linewidth=0.5,
+                                    edgecolor='b',
+                                    facecolor='none'
+                                    ))
+
+    ax3.set_title('classify stones')
+    ax3.imshow(_img)
     for y in range(19):
         for x in range(19):
             sign = board[x][y] & 1
             color = board[x][y] >> 1
             if color > 0:
                 _x, _y = box_pos._grid_pos[x][y]
-                ax2.plot(_x, _y, 'gs' if color == 1 else 'b^', mfc='none')  # if sign else None)
+                ax3.plot(_x, _y, 'gs' if color == 1 else 'b^', mfc='none')  # if sign else None)
 
     plt.show()
 
@@ -140,8 +165,12 @@ S = 'abcdefghijklmnopqrs'
 
 
 def img2sgf(img_name, sgf_name, save_images=False):
-    _img, _ = get_board_image(Image.open(img_name))
+    _img, _, min_score = get_board_image(Image.open(img_name).convert('RGB'))
+    if min_score < 0.7:
+        _img, _, _ = get_board_image(_img)
+
     board = classifier_board(_img, save_images)
+
     blacks = []
     whites = []
     for y in range(19):
