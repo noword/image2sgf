@@ -55,7 +55,6 @@ class GogameDataset(torch.utils.data.Dataset):
         boxes = torch.as_tensor(np.array(boxes), dtype=torch.float32)
         target = {'labels': torch.as_tensor(labels, dtype=torch.int64),
                   'boxes': boxes,
-                  #   'masks': torch.as_tensor(np.array(masks), dtype=torch.uint8),
                   'image_id': torch.tensor([idx]),
                   'iscrowd': torch.zeros([len(labels)], dtype=torch.int64),
                   'area': (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0]),

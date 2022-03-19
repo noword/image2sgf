@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 from misc import get_4points_from_box
 
 
-def perspective_with_matrix(target, mat):
+def perspective_target_with_matrix(target, mat):
     if 'keypoints' in target:
         keypoints = target['keypoints'].numpy()
         keypoints[:, :, :2] = cv2.perspectiveTransform(keypoints[:, :, :2], mat)
@@ -36,66 +36,108 @@ def perspective_with_matrix(target, mat):
     return target
 
 
-def perspective(target: Optional[Dict[str, torch.Tensor]], startpoints: Sequence, endpoints: Sequence):
+def perspective_target(target: Optional[Dict[str, torch.Tensor]], startpoints: Sequence, endpoints: Sequence):
     mat = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
-
-    if 'masks' in target:
-        target['masks'] = F.perspective(target['masks'], startpoints, endpoints)
-
-    return perspective_with_matrix(target, mat)
+    return perspective_target_with_matrix(target, mat)
 
 
 class RandomBackground(torch.nn.Module):
-    def __init__(self, dir_path='background', img_size_range=(512, 768), bg_size_range=(896, 1536),
-                 donoting_probability=0.1, perspectiv_probability=0.8
+    def __init__(self,
+                 dir_path='background',
+                 img_size_range=(512, 768),
+                 bg_size_range=(896, 1536),
+                 rotation_degrees=(-30, 30),
+                 donoting_probability=0.1,
+                 perspectiv_probability=0.8
                  ):
         super().__init__()
         self.img_size_min, self.img_size_max = img_size_range
         self.bg_size_min, self.bg_size_max = bg_size_range
+        self.degree_min, self.degree_max = rotation_degrees
         self.donoting_probability = donoting_probability
         self.perspectiv_probability = perspectiv_probability
         self.bgs = []
         for path in pathlib.Path(dir_path).glob('*.jpg'):
             self.bgs.append(str(path))
 
-    def forward(self, img, target: Optional[Dict[str, torch.Tensor]]):
-        if random.random() < self.donoting_probability:
-            return img, target
-
-        org_w, org_h = img.shape[-2:]
-        idx = random.randint(1, len(self.bgs) - 1)
-
-        # resize
+    def _resize(self, img):
+        org_h, org_w = img.shape[-2:]
         img_w = img_h = random.randint(self.img_size_min, self.img_size_max)
         img = F.resize(img, (img_h, img_w))
-        target = perspective(target, get_4points_from_box(0, 0, org_w, org_h), get_4points_from_box(0, 0, img_w, img_h))
+        mat = cv2.getPerspectiveTransform(np.array(get_4points_from_box(0, 0, org_w, org_h), np.float32),
+                                          np.array(get_4points_from_box(0, 0, img_w, img_h), np.float32))
+        return img, mat
 
-        need_perspective = random.random() < self.perspectiv_probability
-        if need_perspective:
-            # perspective
-            startpoints, endpoints = T.RandomPerspective.get_params(img_w, img_h, 0.4)
-            img = F.perspective(img, startpoints, endpoints)
-            target = perspective(target, startpoints, endpoints)
+    def _perspective(self, img):
+        org_h, org_w = img.shape[-2:]
+        startpoints, endpoints = T.RandomPerspective.get_params(org_w, org_h, 0.4)
+        img = F.perspective(img, startpoints, endpoints)
+        mat = cv2.getPerspectiveTransform(np.array(startpoints, np.float32),
+                                          np.array(endpoints, np.float32))
+        return img, mat, endpoints
 
-        # bg image
-        img_h, img_w = img.shape[1:]
-        bg_w = random.randint(img_w, self.bg_size_max)
-        bg_h = random.randint(img_h, self.bg_size_max)
-        x = random.randint(0, bg_w - img_w)
-        y = random.randint(0, bg_h - img_h)
+    def _add_background(self, img, endpoints):
+        idx = random.randint(1, len(self.bgs) - 1)
+
+        org_h, org_w = img.shape[-2:]
+        bg_w = random.randint(org_w, self.bg_size_max)
+        bg_h = random.randint(org_h, self.bg_size_max)
+        x = random.randint(0, bg_w - org_w)
+        y = random.randint(0, bg_h - org_h)
         bg_img = Image.open(self.bgs[idx]).resize((bg_w, bg_h))
         _img = T.ToPILImage()(img)
-        if need_perspective:
+
+        if endpoints is None:
+            bg_img.paste(_img, (x, y))
+        else:
             alpha = Image.new('L', _img.size)
             draw = ImageDraw.ImageDraw(alpha)
             draw.polygon(tuple([tuple(x) for x in endpoints]), 'white')
             bg_img.paste(_img, (x, y), mask=alpha)
-        else:
-            bg_img.paste(_img, (x, y))
 
-        target = perspective(target, get_4points_from_box(0, 0, 100, 100), get_4points_from_box(x, y, x + 100, y + 100))
+        mat = cv2.getPerspectiveTransform(np.array(get_4points_from_box(0, 0, 100, 100), np.float32),
+                                          np.array(get_4points_from_box(x, y, x + 100, y + 100), np.float32))
 
-        return T.ToTensor()(bg_img), target
+        return T.ToTensor()(bg_img), mat
+
+    def _rotate(self, img):
+        angle = random.randint(self.degree_min, self.degree_max)
+        oh, ow = img.shape[1:]
+        img = F.rotate(img, angle, expand=True)
+
+        h, w = img.shape[1:]
+        mat = cv2.getRotationMatrix2D((ow / 2, oh / 2), angle, 1.0)
+        mat[0, 2] += (w - ow) / 2
+        mat[1, 2] += (h - oh) / 2
+        mat = np.append(mat, [[0, 0, 1]], axis=0)
+
+        return img, mat
+
+    def forward(self, img, target: Optional[Dict[str, torch.Tensor]]):
+        if random.random() < self.donoting_probability:
+            return img, target
+
+        endpoints = None
+        # resize
+        img, mat = self._resize(img)
+
+        if random.random() < self.perspectiv_probability:
+            # perspective
+            img, _mat, endpoints = self._perspective(img)
+            mat = _mat.dot(mat)
+
+        # bg image
+        img, _mat = self._add_background(img, endpoints=endpoints)
+        mat = _mat.dot(mat)
+
+        # rotate
+        img, _mat = self._rotate(img)
+        mat = _mat.dot(mat)
+
+        # adjust target
+        target = perspective_target_with_matrix(target, mat)
+
+        return img, target
 
 
 class GaussianBlur(T.GaussianBlur):
@@ -160,6 +202,6 @@ class RandomRotation(T.RandomRotation):
         mat[1, 2] += (h - oh) / 2
         mat = np.append(mat, [[0, 0, 1]], axis=0)
 
-        target = perspective_with_matrix(target, mat)
+        target = perspective_target_with_matrix(target, mat)
 
         return img, target

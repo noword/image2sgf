@@ -96,9 +96,10 @@ def save_all_images(images, labels):
 
 def demo(img_name, save_images=False):
     pil_img = Image.open(img_name).convert('RGB')
+    print('1st perspective')
     _img0, boxes0, min_score0 = get_board_image(pil_img)
+    print('2nd perspective')
     _img, boxes, min_score = get_board_image(_img0)
-
     board = classifier_board(_img, save_images)
 
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2)
