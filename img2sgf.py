@@ -116,18 +116,10 @@ def demo(img_name, save_images=False):
                                 edgecolor='g',
                                 facecolor='none'))
 
-    ax1.set_title(f'1st perspective correct the board {min_score0}')
+    ax1.set_title(f'perspective correct the board, then detect 4 corners again')
     ax1.imshow(_img0)
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
-    for _boxes in box_pos:
-        for box in _boxes:
-            ax1.add_patch(Rectangle(box[:2],
-                                    box_pos.grid_size,
-                                    box_pos.grid_size,
-                                    linewidth=0.5,
-                                    edgecolor='b',
-                                    facecolor='none'
-                                    ))
+
     for box in boxes:
         ax1.add_patch(Rectangle((box[0], box[1]),
                                 box[2] - box[0],
@@ -136,7 +128,7 @@ def demo(img_name, save_images=False):
                                 edgecolor='g',
                                 facecolor='none'))
 
-    ax2.set_title(f'2nd perspective correct the board {min_score}')
+    ax2.set_title(f'perspective correct the board again')
     ax2.imshow(_img)
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
     for _boxes in box_pos:
