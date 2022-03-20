@@ -87,7 +87,7 @@ def evaluate(model, criterion, data_loader, device, print_freq=100, log_suffix='
     return metric_logger.acc1.global_avg
 
 
-def main(pth_name, epochs=10, batch_size=5, device=None):
+def main(pth_name, epochs=10, batch_size=5, num_workers=1, device=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = get_stone_model()
     if os.path.exists(pth_name):
@@ -129,4 +129,4 @@ def main(pth_name, epochs=10, batch_size=5, device=None):
 
 
 if __name__ == '__main__':
-    main('weiqi_stone.pth', epochs=10, batch_size=32)
+    main('stone.pth', epochs=10, batch_size=32, num_workers=2)

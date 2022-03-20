@@ -8,10 +8,10 @@ def get_transform(train=False):
     transforms.append(T.ToTensor())
     if train:
         transforms.append(RandomNoise())
+        transforms.append(GaussianBlur((3, 9)))
         transforms.append(RandomRectBrightness(p=.8))
         transforms.append(RandomBackground())
         transforms.append(T.RandomPhotometricDistort())
-        transforms.append(GaussianBlur((3, 9)))
     return T.Compose(transforms)
 
 

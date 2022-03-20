@@ -184,11 +184,11 @@ def get_models():
     # board_model = get_board_model_resnet50(thresh=0.5)
     # board_model.load_state_dict(torch.load('weiqi_board_resnet50.pth', map_location=torch.device('cpu')))
     board_model = get_board_model(thresh=0.4)
-    board_model.load_state_dict(torch.load('weiqi_board.pth', map_location=torch.device('cpu')))
+    board_model.load_state_dict(torch.load('board.pth', map_location=torch.device('cpu')))
     board_model.eval()
 
     stone_model = get_stone_model()
-    stone_model.load_state_dict(torch.load('weiqi_stone.pth', map_location=torch.device('cpu')))
+    stone_model.load_state_dict(torch.load('stone.pth', map_location=torch.device('cpu')))
     stone_model.eval()
 
     return board_model, stone_model

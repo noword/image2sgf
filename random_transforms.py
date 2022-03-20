@@ -141,11 +141,8 @@ class RandomBackground(torch.nn.Module):
 
 
 class GaussianBlur(T.GaussianBlur):
-    def __init__(self, kernel_size, sigma=(0.1, 2.0)):
-        super().__init__(kernel_size, sigma)
-
     def forward(self, img, target):
-        return super().forward(img), target
+        return super(GaussianBlur, self).forward(img), target
 
 
 class RandomCrop(T.RandomCrop):
@@ -185,6 +182,14 @@ class RandomRectBrightness(torch.nn.Module):
             w0, w1 = (0, _w) if bool(random.getrandbits(1)) else (_w, w)
             img[:, h0:h1, w0:w1] = self._brightness(img[:, h0:h1, w0:w1])
         return img, target
+
+
+class ColorJitter(T.ColorJitter):
+    def __init__(self, brightness=(0.875, 1.125), contrast=(0.5, 1.5), saturation=(0.5, 1.5), hue=(-0.05, 0.05)):
+        super().__init__(brightness, contrast, saturation, hue)
+
+    def forward(self, img, target):
+        return super().forward(img), target
 
 
 class RandomRotation(T.RandomRotation):
