@@ -87,15 +87,15 @@ def evaluate(model, criterion, data_loader, device, print_freq=100, log_suffix='
     return metric_logger.acc1.global_avg
 
 
-def main(pth_name, epochs=10, batch_size=5, num_workers=1, device=None):
+def main(pth_name, theme_path=None, data_path=None, epochs=10, batch_size=5, num_workers=1, device=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = get_stone_model()
     if os.path.exists(pth_name):
         model.load_state_dict(torch.load(pth_name, map_location=device))
     model.to(device)
 
-    _dataset = StoneDataset(theme_path='./themes',
-                            data_path='stone_data',
+    _dataset = StoneDataset(theme_path=theme_path,
+                            data_path=data_path,
                             transforms=get_stone_transform(True))
 
     indices = torch.randperm(len(_dataset)).tolist()
@@ -129,4 +129,9 @@ def main(pth_name, epochs=10, batch_size=5, num_workers=1, device=None):
 
 
 if __name__ == '__main__':
-    main('stone.pth', epochs=10, batch_size=32, num_workers=2)
+    main(pth_name='stone.pth',
+         theme_path='./themes',
+         data_path='./stone_data',
+         epochs=10,
+         batch_size=32,
+         num_workers=2)

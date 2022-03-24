@@ -28,13 +28,13 @@ def get_board_image(pil_image: Image):
     _scores = target['scores'].detach()[nms]
     assert len(set(_labels)) >= 4
 
-    min_score = 0
     boxes = np.zeros((4, 4))
+    scores = [0] * 4
     for i, box in enumerate(_boxes):
         label = _labels[i] - 1
         if np.count_nonzero(boxes[label]) == 0:
             boxes[label] = box.numpy()
-            min_score = min(min_score, _scores[i])
+            scores[label] = float(_scores[i])
             print(int(label), float(_scores[i]), boxes[label])
 
     # print(boxes)
@@ -51,7 +51,7 @@ def get_board_image(pil_image: Image):
     transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
     _img = cv2.warpPerspective(np.array(pil_image), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
 
-    return _img, boxes, min_score
+    return _img, boxes, scores
 
 
 def classifier_board(image: np.array, save_images=False):
@@ -97,10 +97,10 @@ def save_all_images(images, labels):
 def demo(img_name, save_images=False):
     pil_img = Image.open(img_name).convert('RGB')
     print('1st perspective')
-    _img0, boxes0, min_score0 = get_board_image(pil_img)
+    img0, boxes0, scores0 = get_board_image(pil_img)
     print('2nd perspective')
-    _img, boxes, min_score = get_board_image(_img0)
-    board = classifier_board(_img, save_images)
+    img1, boxes1, scores1 = get_board_image(img0)
+    board = classifier_board(img1, save_images)
 
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2)
     plt.subplots_adjust(left=0, right=1, top=0.95, bottom=0, wspace=0.2, hspace=0.3)
@@ -108,28 +108,30 @@ def demo(img_name, save_images=False):
 
     ax0.set_title('detect 4 corners')
     ax0.imshow(pil_img)
-    for box in boxes0:
+    for i, box in enumerate(boxes0):
         ax0.add_patch(Rectangle((box[0], box[1]),
                                 box[2] - box[0],
                                 box[3] - box[1],
                                 linewidth=1,
                                 edgecolor='g',
                                 facecolor='none'))
+        ax0.text(box[0], box[1], f'{scores0[i]:.2f}', color='r')
 
     ax1.set_title(f'perspective correct the board, then detect 4 corners again')
-    ax1.imshow(_img0)
+    ax1.imshow(img0)
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
 
-    for box in boxes:
+    for i, box in enumerate(boxes1):
         ax1.add_patch(Rectangle((box[0], box[1]),
                                 box[2] - box[0],
                                 box[3] - box[1],
                                 linewidth=1,
                                 edgecolor='g',
                                 facecolor='none'))
+        ax1.text(box[0], box[1], f'{scores1[i]:.2f}', color='r')
 
     ax2.set_title(f'perspective correct the board again')
-    ax2.imshow(_img)
+    ax2.imshow(img1)
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
     for _boxes in box_pos:
         for box in _boxes:
@@ -142,7 +144,7 @@ def demo(img_name, save_images=False):
                                     ))
 
     ax3.set_title('classify stones')
-    ax3.imshow(_img)
+    ax3.imshow(img1)
     for y in range(19):
         for x in range(19):
             sign = board[x][y] & 1
@@ -158,8 +160,8 @@ S = 'abcdefghijklmnopqrs'
 
 
 def img2sgf(img_name, sgf_name, save_images=False):
-    _img, _, min_score = get_board_image(Image.open(img_name).convert('RGB'))
-    if min_score < 0.7:
+    _img, _, scores = get_board_image(Image.open(img_name).convert('RGB'))
+    if min(scores) < 0.7:
         _img, _, _ = get_board_image(_img)
 
     board = classifier_board(_img, save_images)

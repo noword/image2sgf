@@ -24,7 +24,7 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
                                               num_workers=num_workers,
                                               collate_fn=utils.collate_fn)
 
-    dataset_test = RandomBoardDataset(initvar=50, hands_num=hands_num, transforms=get_transform(train=True))
+    dataset_test = RandomBoardDataset(initvar=int(data_size * 0.1), hands_num=hands_num, transforms=get_transform(train=True))
     data_loader_test = torch.utils.data.DataLoader(dataset_test,
                                                    batch_size=1,
                                                    shuffle=False,
@@ -33,11 +33,12 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
 
     params = [p for p in model.parameters() if p.requires_grad]
     # optimizer = torch.optim.Adam(params, lr=0.0001)
-    optimizer = torch.optim.SGD(params, lr=0.0002, momentum=0.9, weight_decay=0.0001)
+    optimizer = torch.optim.SGD(params, lr=0.0001, momentum=0.9, weight_decay=0.0001)
     # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.9)
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=(16, 22), gamma=0.1)
 
     num_epochs = 26
+    best_score = 0
     # torch.cuda.memory_summary(device=None, abbreviated=False)
     for epoch in range(num_epochs):
         # torch.cuda.empty_cache()
@@ -46,12 +47,17 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
         # update the learning rate
         lr_scheduler.step()
         # evaluate on the test dataset
-        evaluate(model, data_loader_test, device=device)
+        evaluator = evaluate(model, data_loader_test, device=device)
+        score = sum(evaluator.coco_eval['bbox'].stats)
+        if score > best_score:
+            best_score = score
+
         torch.save(model.state_dict(), pth_name)
+
         dataset.initseed()
         dataset_test.initseed()
 
-    print("That's it!")
+    print(f"That's it! Best score is {best_score}")
 
 
 if __name__ == '__main__':
