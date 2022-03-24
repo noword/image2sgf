@@ -1,6 +1,6 @@
 from torchvision import models
-from random_transforms import *
-import transforms as T
+from .random_transforms import *
+from . import transforms as T
 
 
 def get_transform(train=False):

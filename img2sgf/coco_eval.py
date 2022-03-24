@@ -8,7 +8,7 @@ import torch
 from pycocotools.cocoeval import COCOeval
 from pycocotools.coco import COCO
 
-import utils
+from . import utils
 
 
 class CocoEvaluator:

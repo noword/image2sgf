@@ -7,7 +7,7 @@ import torchvision.transforms.functional as F
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
-from misc import get_4points_from_box
+from .misc import get_4points_from_box
 
 
 def perspective_target_with_matrix(target, mat):

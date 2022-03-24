@@ -1,9 +1,8 @@
-from model import get_stone_model, get_stone_transform
-from stone_dataset import StoneDataset
-import utils
+from img2sgf import *
 import time
 import torch
 import os
+
 try:
     from apex import amp
 except ImportError:

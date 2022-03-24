@@ -1,9 +1,8 @@
-from model import get_board_model, get_stone_model, get_board_model_resnet50
+from img2sgf import *
 import torch
 import torchvision.transforms as T
 import torchvision.transforms.functional as F
 import torchvision
-from misc import NpBoxPostion
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt

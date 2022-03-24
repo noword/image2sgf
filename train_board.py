@@ -1,9 +1,6 @@
-from gogame_dataset import RandomBoardDataset
-from model import get_board_model, get_transform
+from img2sgf import *
 import torch
 import os
-from engine import train_one_epoch, evaluate
-import utils
 
 
 def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=1000, device=None):

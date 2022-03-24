@@ -1,4 +1,4 @@
-from sgf2img import GridPosition
+from .sgf2img import GridPosition
 import numpy as np
 
 

@@ -1,9 +1,9 @@
-from sgf2img import GameImageGenerator, GridPosition
+from .sgf2img import GameImageGenerator, GridPosition
+from .misc import BoxPostion
 from sgfmill.boards import Board
 import numpy as np
 from PIL import ImageFont, ImageDraw
 import random
-from misc import BoxPostion
 
 
 class BoardGenerator(GameImageGenerator):

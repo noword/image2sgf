@@ -1,8 +1,8 @@
 import torch
-from sgf2img import GetAllThemes
-from gogame_generator import RandomBoardGenerator
+from .sgf2img import GetAllThemes
+from .gogame_generator import RandomBoardGenerator
 from PIL import Image, ImageDraw
-from misc import NpBoxPostion
+from .misc import NpBoxPostion
 import os
 import random
 import pathlib

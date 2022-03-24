@@ -1,5 +1,6 @@
-from gogame_generator import GogameGenerator, RandomGogameGenerator, RandomBoardGenerator
-from sgf2img import GetAllThemes
+from .gogame_generator import GogameGenerator, RandomGogameGenerator, RandomBoardGenerator
+from .misc import get_xy, S
+from .sgf2img import GetAllThemes
 import random
 import numpy as np
 import torch
@@ -9,7 +10,6 @@ import torchvision
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from datetime import datetime
-from misc import get_xy, S
 from PIL import ImageDraw
 
 
