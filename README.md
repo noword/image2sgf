@@ -7,6 +7,8 @@
 
 
 # Usage:
+Download pth files from https://github.com/noword/image2sgf/releases/tag/v0.1
+
 ```
 usage: img2sgf.py [-h] [--save_images] image_name [sgf_name]
 
