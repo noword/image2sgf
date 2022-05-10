@@ -5,6 +5,14 @@
 
 [torchvision](https://pytorch.org/vision/stable/index.html)
 
+[cv2](https://github.com/opencv/opencv-python)
+
+[numpy](https://numpy.org/)
+
+[matplotlib](https://matplotlib.org/)
+
+[pillow](https://pillow.readthedocs.io/en/stable/)
+
 
 # Usage:
 Download pth files from https://github.com/noword/image2sgf/releases/tag/v0.1
