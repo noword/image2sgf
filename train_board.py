@@ -46,10 +46,10 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
         # evaluate on the test dataset
         evaluator = evaluate(model, data_loader_test, device=device)
         score = sum(evaluator.coco_eval['bbox'].stats)
+        print(f'current score: {score}, best score: {best_score}')
         if score > best_score:
             best_score = score
-
-        torch.save(model.state_dict(), pth_name)
+            torch.save(model.state_dict(), pth_name)
 
         dataset.initseed()
         dataset_test.initseed()
