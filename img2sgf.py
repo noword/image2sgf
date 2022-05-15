@@ -179,6 +179,7 @@ def img2sgf(img_name, sgf_name, save_images=False):
         fp.write(f'(;GM[1]FF[4]CA[UTF-8]AP[img2sgf]KM[7.5]SZ[19]DT[{datetime.now().strftime("%Y-%m-%d")}]')
         fp.write('AB' + ''.join(blacks))
         fp.write('AW' + ''.join(whites))
+        fp.write(')')
 
 
 def get_models():
