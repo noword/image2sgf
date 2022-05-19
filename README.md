@@ -13,16 +13,18 @@
 
 [pillow](https://pillow.readthedocs.io/en/stable/)
 
+[pyautogui](https://pypi.org/project/PyAutoGUI/)
+
 
 # Usage:
 Download pth files from https://github.com/noword/image2sgf/releases/tag/v0.1
 
 ```
-usage: img2sgf.py [-h] [--save_images] image_name [sgf_name]
+usage: img2sgf.py [-h] [--save_images] [image_name] [sgf_name]
 
 positional arguments:
   image_name     input image file name
-  sgf_name       output sgf file name
+  sgf_name       output sgf file name, catpure the screenshot if missing this value
 
 optional arguments:
   -h, --help     show this help message and exit

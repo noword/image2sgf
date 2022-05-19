@@ -13,7 +13,7 @@ from datetime import datetime
 import argparse
 import os
 
-
+TMP_IMG_NAME = 'tmp.jpg'
 DEFAULT_IMAGE_SIZE = 1024
 
 
@@ -198,14 +198,25 @@ def get_models():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('image_name', action='store', nargs=1, help='input image file name')
-    parser.add_argument('sgf_name', action='store', nargs='?', help='output sgf file name')
+    parser.add_argument('image_name', action='store', nargs='?', help='input image file name')
+    parser.add_argument('sgf_name', action='store', nargs='?',
+                        help='output sgf file name, catpure the screenshot if missing this value')
     parser.add_argument('--save_images', action='store_true', default=False, help='save grid images')
     args = parser.parse_args()
 
     board_model, stone_model = get_models()
 
-    if args.sgf_name:
-        img2sgf(args.image_name[0], args.sgf_name, args.save_images)
+    if args.image_name is None:
+        image_name = TMP_IMG_NAME
+        import pyautogui
+        pyautogui.screenshot().save(image_name)
     else:
-        demo(args.image_name[0], args.save_images)
+        image_name = args.image_name
+
+    if args.sgf_name:
+        img2sgf(image_name, args.sgf_name, args.save_images)
+    else:
+        demo(image_name, args.save_images)
+
+    if args.image_name is None:
+        os.remove(TMP_IMG_NAME)
