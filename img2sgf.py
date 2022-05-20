@@ -12,8 +12,8 @@ from PIL import Image
 from datetime import datetime
 import argparse
 import os
+import time
 
-TMP_IMG_NAME = 'tmp.jpg'
 DEFAULT_IMAGE_SIZE = 1024
 
 
@@ -93,8 +93,9 @@ def save_all_images(images, labels):
         counts[label] += 1
 
 
-def demo(img_name, save_images=False):
-    pil_img = Image.open(img_name).convert('RGB')
+def demo(pil_img, save_images=False):
+    if isinstance(pil_img, str):
+        pil_img = Image.open(pil_img).convert('RGB')
     print('1st perspective')
     img0, boxes0, scores0 = get_board_image(pil_img)
     print('2nd perspective')
@@ -158,8 +159,10 @@ def demo(img_name, save_images=False):
 S = 'abcdefghijklmnopqrs'
 
 
-def img2sgf(img_name, sgf_name, save_images=False):
-    _img, _, scores = get_board_image(Image.open(img_name).convert('RGB'))
+def img2sgf(img, sgf_name, save_images=False):
+    if isinstance(img, str):
+        img = Image.open(img).convert('RGB')
+    _img, _, scores = get_board_image(img)
     if min(scores) < 0.7:
         _img, _, _ = get_board_image(_img)
 
@@ -197,26 +200,26 @@ def get_models():
 
 
 if __name__ == '__main__':
+    start_time = time.time()
     parser = argparse.ArgumentParser()
     parser.add_argument('image_name', action='store', nargs='?', help='input image file name')
-    parser.add_argument('sgf_name', action='store', nargs='?',
-                        help='output sgf file name, catpure the screenshot if missing this value')
+    parser.add_argument('--sgf_name', action='store', help='output sgf file name')
+    parser.add_argument('--capture', action='store_true', default=False, help='capture the screenshot')
     parser.add_argument('--save_images', action='store_true', default=False, help='save grid images')
     args = parser.parse_args()
 
     board_model, stone_model = get_models()
 
-    if args.image_name is None:
-        image_name = TMP_IMG_NAME
+    if args.capture or args.image_name is None:
         import pyautogui
-        pyautogui.screenshot().save(image_name)
+        sleep_time = 2 - time.time() + start_time
+        if sleep_time > 0:
+            time.sleep()
+        img = pyautogui.screenshot()
     else:
-        image_name = args.image_name
+        img = Image.open(args.image_name).convert("RGB")
 
     if args.sgf_name:
-        img2sgf(image_name, args.sgf_name, args.save_images)
+        img2sgf(img, args.sgf_name, args.save_images)
     else:
-        demo(image_name, args.save_images)
-
-    if args.image_name is None:
-        os.remove(TMP_IMG_NAME)
+        demo(img, args.save_images)

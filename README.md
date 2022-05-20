@@ -20,15 +20,16 @@
 Download pth files from https://github.com/noword/image2sgf/releases/tag/v0.1
 
 ```
-usage: img2sgf.py [-h] [--save_images] [image_name] [sgf_name]
+usage: img2sgf.py [-h] [--sgf_name SGF_NAME] [--capture] [--save_images] [image_name]
 
 positional arguments:
-  image_name     input image file name
-  sgf_name       output sgf file name, catpure the screenshot if missing this value
+  image_name           input image file name
 
 optional arguments:
-  -h, --help     show this help message and exit
-  --save_images  save grid images
+  -h, --help           show this help message and exit
+  --sgf_name SGF_NAME  output sgf file name
+  --capture            capture the screenshot
+  --save_images        save grid images
   ```
 
 # Examples:
