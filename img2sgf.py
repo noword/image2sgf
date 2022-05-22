@@ -214,7 +214,7 @@ if __name__ == '__main__':
         import pyautogui
         sleep_time = 2 - time.time() + start_time
         if sleep_time > 0:
-            time.sleep()
+            time.sleep(sleep_time)
         img = pyautogui.screenshot()
     else:
         img = Image.open(args.image_name).convert("RGB")
