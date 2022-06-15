@@ -13,6 +13,7 @@ from datetime import datetime
 import argparse
 import os
 import time
+from sgfmill import sgf
 
 DEFAULT_IMAGE_SIZE = 1024
 
@@ -156,9 +157,6 @@ def demo(pil_img, save_images=False):
     plt.show()
 
 
-S = 'abcdefghijklmnopqrs'
-
-
 def img2sgf(img, sgf_name, save_images=False):
     if isinstance(img, str):
         img = Image.open(img).convert('RGB')
@@ -174,15 +172,16 @@ def img2sgf(img, sgf_name, save_images=False):
         for x in range(19):
             color = board[x][y] >> 1
             if color == 1:
-                blacks.append(f'[{S[y]}{S[18-x]}]')
+                blacks.append([x, y])
             elif color == 2:
-                whites.append(f'[{S[y]}{S[18-x]}]')
+                whites.append([x, y])
 
-    with open(sgf_name, 'w') as fp:
-        fp.write(f'(;GM[1]FF[4]CA[UTF-8]AP[img2sgf]KM[7.5]SZ[19]DT[{datetime.now().strftime("%Y-%m-%d")}]')
-        fp.write('AB' + ''.join(blacks))
-        fp.write('AW' + ''.join(whites))
-        fp.write(')')
+    game = sgf.Sgf_game(size=19)
+    game.set_date(datetime.now())
+    root_node = game.get_root()
+    root_node.set('AP', ('img2sgf', '1.0'))
+    root_node.set_setup_stones(blacks, whites)
+    open(sgf_name, 'wb').write(game.serialise())
 
 
 def get_models():
