@@ -180,6 +180,8 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
         except ValueError:
             raise Exception("bad sgf file")
 
+        setups = sgf_game.get_root().get_setup_stones()
+
         try:
             board, plays = sgf_moves.get_setup_and_moves(sgf_game)
         except ValueError as e:
@@ -198,16 +200,14 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
             if i == end:
                 break
 
-        return board, plays[:end]
+        return board, setups, plays[:end]
 
     def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, board_rate=0.8):
         if img_size != self.DEFAULT_WIDTH:
             self.DEFAULT_WIDTH = img_size
             self.font = ImageFont.truetype(self.theme['font'], int(self.DEFAULT_WIDTH * 0.02))
 
-        self.BOARD_RATE = board_rate
-
-        board, plays = self._get_sgf_info(sgf_path, end)
+        board, setups, plays = self._get_sgf_info(sgf_path, end)
         if end is None:
             end = len(plays)
 
@@ -226,6 +226,25 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
         num_color = {'b': 'white',
                      'w': self.theme['line_color'],
                      None: self.theme['line_color']}
+
+        black_img = self.get_stone_image('b', board.side)
+        for row, col in setups[0]:
+            x_offset = random.randint(-1, 1)
+            y_offset = random.randint(-1, 1)
+            board_image.paste(black_img,
+                              (grid_pos[row][col].x - stone_offset + x_offset,
+                               grid_pos[row][col].y - stone_offset + y_offset),
+                              black_img)
+
+        white_img = self.get_stone_image('w', board.side)
+        for row, col in setups[1]:
+            x_offset = random.randint(-1, 1)
+            y_offset = random.randint(-1, 1)
+            board_image.paste(white_img,
+                              (grid_pos[row][col].x - stone_offset + x_offset,
+                               grid_pos[row][col].y - stone_offset + y_offset),
+                              white_img)
+
         for colour, move in plays[::-1]:
             if move is None:
                 continue

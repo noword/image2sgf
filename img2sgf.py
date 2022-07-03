@@ -1,107 +1,19 @@
-from img2sgf import *
-import torch
-import torchvision.transforms as T
-import torchvision.transforms.functional as F
-import torchvision
-import cv2
-import numpy as np
+from img2sgf import get_models, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-import sys
 from PIL import Image
-from datetime import datetime
 import argparse
-import os
 import time
-from sgfmill import sgf
-
-DEFAULT_IMAGE_SIZE = 1024
-
-
-def get_board_image(pil_image: Image):
-    img = T.ToTensor()(pil_image)
-    target = board_model(img.unsqueeze(0))[0]
-    # print(target)
-    nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.1)
-    _boxes = target['boxes'].detach()[nms]
-    _labels = target['labels'].detach()[nms]
-    _scores = target['scores'].detach()[nms]
-    assert len(set(_labels)) >= 4
-
-    boxes = np.zeros((4, 4))
-    scores = [0] * 4
-    for i, box in enumerate(_boxes):
-        label = _labels[i] - 1
-        if np.count_nonzero(boxes[label]) == 0:
-            boxes[label] = box.numpy()
-            scores[label] = float(_scores[i])
-            print(int(label), float(_scores[i]), boxes[label])
-
-    # print(boxes)
-    assert [0] * 4 not in boxes
-
-    box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
-    startpoints = boxes[:, :2].tolist()
-    endpoints = [box_pos[18][0][:2],  # top left
-                 box_pos[18][18][:2],  # top right
-                 box_pos[0][0][:2],  # bottom left
-                 box_pos[0][18][:2]  # bottom right
-                 ]
-
-    transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
-    _img = cv2.warpPerspective(np.array(pil_image), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
-
-    return _img, boxes, scores
-
-
-def classifier_board(image: np.array, save_images=False):
-    box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
-    img = T.ToTensor()(image)
-    imgs = torch.empty((19 * 19, 3, int(box_pos.grid_size), int(box_pos.grid_size)))
-
-    for y in range(19):
-        for x in range(19):
-            x0, y0, x1, y1 = box_pos[y][x].astype(int)
-            imgs[x + y * 19] = img[:, y0:y1, x0:x1]
-
-    results = stone_model(imgs).argmax(1)
-
-    if save_images:
-        save_all_images(imgs, results)
-
-    results = results.reshape(19, 19)
-    print(results.flip(0))
-
-    return results
-
-
-def save_all_images(images, labels):
-    path = 'stones'
-    num_classes = 6
-    counts = [0] * num_classes
-
-    for i in range(num_classes):
-        try:
-            os.makedirs(f'{path}/{i}')
-        except BaseException:
-            pass
-        while os.path.exists(f'{path}/{counts[i]}.jpg'):
-            counts[i] += 1
-
-    for i, img in enumerate(images):
-        label = int(labels[i])
-        T.ToPILImage()(img).save(f'{path}/{label}/{counts[label]}.jpg')
-        counts[label] += 1
 
 
 def demo(pil_img, save_images=False):
     if isinstance(pil_img, str):
         pil_img = Image.open(pil_img).convert('RGB')
     print('1st perspective')
-    img0, boxes0, scores0 = get_board_image(pil_img)
+    img0, boxes0, scores0 = get_board_image(board_model, pil_img)
     print('2nd perspective')
-    img1, boxes1, scores1 = get_board_image(img0)
-    board = classifier_board(img1, save_images)
+    img1, boxes1, scores1 = get_board_image(board_model, img0)
+    board = classifier_board(stone_model, img1, save_images)
 
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2)
     plt.subplots_adjust(left=0, right=1, top=0.95, bottom=0, wspace=0.2, hspace=0.3)
@@ -160,42 +72,13 @@ def demo(pil_img, save_images=False):
 def img2sgf(img, sgf_name, save_images=False):
     if isinstance(img, str):
         img = Image.open(img).convert('RGB')
-    _img, _, scores = get_board_image(img)
+    _img, _, scores = get_board_image(board_model, img)
     if min(scores) < 0.7:
-        _img, _, _ = get_board_image(_img)
+        _img, _, _ = get_board_image(board_model, _img)
 
-    board = classifier_board(_img, save_images)
-
-    blacks = []
-    whites = []
-    for y in range(19):
-        for x in range(19):
-            color = board[x][y] >> 1
-            if color == 1:
-                blacks.append([x, y])
-            elif color == 2:
-                whites.append([x, y])
-
-    game = sgf.Sgf_game(size=19)
-    game.set_date(datetime.now())
-    root_node = game.get_root()
-    root_node.set('AP', ('img2sgf', '1.0'))
-    root_node.set_setup_stones(blacks, whites)
-    open(sgf_name, 'wb').write(game.serialise())
-
-
-def get_models():
-    # board_model = get_board_model_resnet50(thresh=0.5)
-    # board_model.load_state_dict(torch.load('weiqi_board_resnet50.pth', map_location=torch.device('cpu')))
-    board_model = get_board_model(thresh=0.4)
-    board_model.load_state_dict(torch.load('board.pth', map_location=torch.device('cpu')))
-    board_model.eval()
-
-    stone_model = get_stone_model()
-    stone_model.load_state_dict(torch.load('stone.pth', map_location=torch.device('cpu')))
-    stone_model.eval()
-
-    return board_model, stone_model
+    board = classifier_board(stone_model, _img, save_images)
+    sgf = get_sgf(board)
+    open(sgf_name, 'wb').write(sgf.serialise())
 
 
 if __name__ == '__main__':

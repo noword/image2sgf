@@ -1,4 +1,5 @@
 from img2sgf import *
+from img2sgf.stone_dataset import *
 import time
 import torch
 import os

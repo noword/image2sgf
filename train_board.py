@@ -1,4 +1,7 @@
 from img2sgf import *
+from img2sgf.random_transforms import *
+from img2sgf.gogame_dataset import *
+from img2sgf.engine import *
 import torch
 import os
 
