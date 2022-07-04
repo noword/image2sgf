@@ -40,7 +40,7 @@ class GogameGenerator(GameImageGenerator):
 
         self.BOARD_RATE = board_rate
 
-        board, plays = self._get_sgf_info(sgf_path, end)
+        board, _, plays = self._get_sgf_info(sgf_path, end)
         assert board.side == 19
 
         if end is None:
@@ -162,7 +162,7 @@ class RandomGenerator:
                     continue
                 self._plays.append((color, (x, y)))
 
-        return self._board, self._plays[:end]
+        return self._board, [[], [], []], self._plays[:end]
 
 
 class RandomGogameGenerator(RandomGenerator, GogameGenerator):

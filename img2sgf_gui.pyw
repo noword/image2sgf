@@ -8,6 +8,7 @@ import threading
 import numpy as np
 import pyautogui
 import time
+import webbrowser
 
 _ = wx.GetTranslation
 
@@ -94,6 +95,7 @@ class Model:
         dc = wx.MemoryDC(bmp)
         box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
         shape_size = int(box_pos.grid_size / 3)
+        half_shape_size = shape_size // 2
         black_shapes = []
         white_shapes = []
         for y in range(19):
@@ -102,9 +104,11 @@ class Model:
                 if color == 0:
                     continue
                 elif color == 1:
-                    black_shapes.append((*box_pos._grid_pos[x][y], shape_size, shape_size))
+                    _x, _y = box_pos._grid_pos[x][y]
+                    black_shapes.append((_x - half_shape_size, _y - half_shape_size, shape_size, shape_size))
                 else:  # color == 2
-                    white_shapes.append((*box_pos._grid_pos[x][y], shape_size, shape_size))
+                    _x, _y = box_pos._grid_pos[x][y]
+                    white_shapes.append((_x - half_shape_size, _y - half_shape_size, shape_size, shape_size))
 
         dc.DrawEllipseList(black_shapes, wx.Pen('green', 5), wx.Brush('green', wx.TRANSPARENT))
         dc.DrawRectangleList(white_shapes, wx.Pen('blue', 5), wx.Brush('blue', wx.TRANSPARENT))
@@ -176,9 +180,10 @@ class MainFrame(wx.Frame):
                              _('Option'),
                              )
         self.toolbar.AddTool(70,
-                             _('About'),
-                             imgs.HELP.GetBitmap(),
-                             _('About'))
+                             _('Home'),
+                             imgs.HOME.GetBitmap(),
+                             _('Home page'))
+        self.Bind(wx.EVT_TOOL, self.OnHomeClick, id=70)
 
         self.toolbar.EnableTool(30, False)
         self.toolbar.EnableTool(40, False)
@@ -315,6 +320,9 @@ class MainFrame(wx.Frame):
         self.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
         [self.toolbar.EnableTool(i, False) for i in range(10, 60, 10)]
         threading.Thread(target=CaptureScreen).start()
+
+    def OnHomeClick(self, event):
+        webbrowser.open('https://github.com/noword/image2sgf')
 
 
 class App(wx.App):

@@ -36,7 +36,7 @@ class StoneDataset(torch.utils.data.Dataset):
                           'w': gig.theme['line_color'],
                           None: gig.theme['line_color']}
 
-            board, plays = gig._get_sgf_info(None)
+            board, _, plays = gig._get_sgf_info(None)
             box_pos = NpBoxPostion(gig.DEFAULT_WIDTH, board.side, gig.BOARD_RATE)
             offset = int(box_pos.grid_size * 0.2)
 
