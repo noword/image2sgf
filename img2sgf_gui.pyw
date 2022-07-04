@@ -6,7 +6,8 @@ from img2sgf import get_models, get_board_image, classifier_board, NpBoxPostion,
 from img2sgf.sgf2img import GameImageGenerator, GetAllThemes
 import threading
 import numpy as np
-
+import pyautogui
+import time
 
 _ = wx.GetTranslation
 
@@ -31,12 +32,18 @@ class Model:
 
         threading.Thread(target=load_model, args=(board_path, stone_path)).start()
 
-    def recognize(self, img_path):
+    def recognize(self, img):
         if self.board_model is None or self.stone_model is None:
             return False
 
-        img = Image.open(img_path)
+        if isinstance(img, str):
+            img = Image.open(img)
+
         wx.PostEvent(self.window, NewImageEvent(0, img.copy()))
+        wx.PostEvent(self.window, NewImageEvent(1, None))
+        wx.PostEvent(self.window, NewImageEvent(2, None))
+        wx.PostEvent(self.window, NewImageEvent(3, None))
+
         try:
             _img, boxes, scores = get_board_image(self.board_model, img)
         except BaseException as err:
@@ -123,6 +130,7 @@ class MainFrame(wx.Frame):
                              _('Screenshot'),
                              imgs.SCREENSHOT.GetBitmap(),
                              _('Capture a screeshot'))
+        self.Bind(wx.EVT_TOOL, self.OnCaptureScreen, id=10)
         self.toolbar.AddSeparator()
 
         self.toolbar.AddTool(20,
@@ -199,11 +207,14 @@ class MainFrame(wx.Frame):
             return img.Copy().Rescale(new_w, new_h, wx.IMAGE_QUALITY_HIGH)
 
         img = self.images[index]
-        if img is not None:
+        if img is None:
+            bmp = wx.NullBitmap
+        else:
             windowsize = self.client.GetSize()
             w, h = windowsize.x // 2, windowsize.y // 2
             img = rescale(img, w, h)
-            self.bitmaps[index].SetBitmap(wx.Bitmap(img))
+            bmp = wx.Bitmap(img)
+        self.bitmaps[index].SetBitmap(bmp)
 
     def OnSetImage(self, event):
         img = event.image
@@ -213,22 +224,22 @@ class MainFrame(wx.Frame):
         self.images[event.index] = img
         self.RefreshImage(event.index)
 
-    def OnOpenClick(self, event):
-        def recognize(path):
-            if self.model.recognize(path):
-                self.toolbar.EnableTool(30, True)
-                self.toolbar.EnableTool(40, True)
-                self.toolbar.EnableTool(50, True)
-            else:
-                dlg = wx.MessageDialog(self, _('Recognition failed'),
-                                       _('Error'),
-                                       wx.OK | wx.ICON_INFORMATION
-                                       #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
-                                       )
-                dlg.ShowModal()
-                dlg.Destroy()
-            self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
+    def Recognize(self, img):
+        [self.toolbar.EnableTool(i, False) for i in range(10, 60, 10)]
+        if self.model.recognize(img):
+            [self.toolbar.EnableTool(i, True) for i in range(10, 60, 10)]
+        else:
+            [self.toolbar.EnableTool(i, True) for i in range(10, 30, 10)]
+            dlg = wx.MessageDialog(self, _('Recognition failed'),
+                                   _('Error'),
+                                   wx.OK | wx.ICON_INFORMATION
+                                   #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                   )
+            dlg.ShowModal()
+            dlg.Destroy()
+        self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
 
+    def OnOpenClick(self, event):
         dlg = wx.FileDialog(self,
                             message=_('Choose a file'),
                             defaultDir=os.getcwd(),
@@ -239,7 +250,7 @@ class MainFrame(wx.Frame):
                             )
         if dlg.ShowModal() == wx.ID_OK:
             self.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
-            threading.Thread(target=recognize, args=(dlg.GetPath(), )).start()
+            threading.Thread(target=self.Recognize, args=(dlg.GetPath(), )).start()
 
     def OnSaveClick(self, event):
         dlg = wx.FileDialog(self,
@@ -258,6 +269,40 @@ class MainFrame(wx.Frame):
 
         self.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
         threading.Thread(target=rotate, args=(event.GetId() == 50,)).start()
+
+    def OnCaptureScreen(self, event):
+        def CaptureScreen():
+            font = wx.Font()
+            font.SetPointSize(32)
+            small_font = wx.Font()
+            small_font.SetPointSize(16)
+
+            for i in range(3, 0, -1):
+                bmp = wx.Bitmap(512, 256)
+                dc = wx.MemoryDC(bmp)
+
+                dc.SetBackground(wx.Brush("white"))
+                dc.Clear()
+
+                dc.SetFont(small_font)
+                dc.DrawText(_('make sure only one board on the screen'), 10, 10)
+
+                dc.SetFont(font)
+                dc.DrawText(str(i), 240, 112)
+
+                del(dc)
+
+                img = bmp.ConvertToImage()
+                wx.PostEvent(self, NewImageEvent(0, img))
+                time.sleep(1)
+
+            img = pyautogui.screenshot()
+            self.Recognize(img)
+            self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
+
+        self.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
+        [self.toolbar.EnableTool(i, False) for i in range(10, 60, 10)]
+        threading.Thread(target=CaptureScreen).start()
 
 
 class App(wx.App):
