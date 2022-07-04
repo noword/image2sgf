@@ -1,7 +1,7 @@
 import wx
 import os
 import imgs
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 from img2sgf import get_models, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
 from img2sgf.sgf2img import GameImageGenerator, GetAllThemes
 import threading
@@ -50,16 +50,7 @@ class Model:
             print(err)
             return False
 
-        box_image = img.copy()
-        draw = ImageDraw.ImageDraw(box_image)
-        y0, y1 = boxes[0, [1, 3]]
-        font_size = int(y1 - y0)
-        font = ImageFont.truetype('arial.ttf', size=font_size)
-        for i, box in enumerate(boxes):
-            draw.rectangle(box.tolist(), outline='green', width=5)
-            draw.text((box[0], box[1] - font_size), f'{scores[i]:.2f}', fill='red', font=font)
-
-        wx.PostEvent(self.window, NewImageEvent(1, box_image))
+        wx.PostEvent(self.window, NewImageEvent(1, self.__get_box_image(img, boxes, scores)))
 
         _img, boxes, scores = get_board_image(self.board_model, _img)
         self.board = classifier_board(self.stone_model, _img)
@@ -71,6 +62,24 @@ class Model:
         wx.PostEvent(self.window, NewImageEvent(3, self.__get_board_image_from_sgf(self.sgf)))
         return True
 
+    def __get_box_image(self, img, boxes, scores):
+        w, h = img.size
+        bmp = wx.BitmapFromBuffer(w, h, img.tobytes())
+        dc = wx.MemoryDC(bmp)
+
+        y0, y1 = boxes[0, [1, 3]]
+        font_size = int(y1 - y0)
+        font = wx.Font()
+        font.SetPixelSize(wx.Size(0, font_size))
+        dc.SetFont(font)
+        rects = [[box[0], box[1], box[2] - box[0], box[3] - box[1]] for box in boxes]
+        dc.DrawRectangleList(rects, wx.Pen('green', width=font_size // 5), wx.Brush('green', wx.TRANSPARENT))
+
+        dc.SetTextForeground('red')
+        for i, box in enumerate(boxes):
+            dc.DrawText(f'{scores[i]:.2f}', (box[0], box[1] - font_size))
+        return bmp.ConvertToImage()
+
     def __get_board_image_from_sgf(self, sgf):
         TMP_SGF = 'tmp.sgf'
         open(TMP_SGF, 'wb').write(sgf.serialise())
@@ -80,23 +89,26 @@ class Model:
         return sgf_image
 
     def __get_board_image_with_stones(self, board_image, board):
-        board_image = board_image.copy()
-        draw = ImageDraw.ImageDraw(board_image)
+        w, h = board_image.size
+        bmp = wx.BitmapFromBuffer(w, h, board_image.tobytes())
+        dc = wx.MemoryDC(bmp)
         box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
+        shape_size = int(box_pos.grid_size / 3)
+        black_shapes = []
+        white_shapes = []
         for y in range(19):
             for x in range(19):
                 color = board[x][y] >> 1
-                _sides, _color = ((None, None),
-                                  (3, 'green'),
-                                  (4, 'blue')
-                                  )[color]
+                if color == 0:
+                    continue
+                elif color == 1:
+                    black_shapes.append((*box_pos._grid_pos[x][y], shape_size, shape_size))
+                else:  # color == 2
+                    white_shapes.append((*box_pos._grid_pos[x][y], shape_size, shape_size))
 
-                if _sides is not None:
-                    _x, _y = box_pos._grid_pos[x][y]
-                    r = int(box_pos.grid_size / 3)
-                    for i in range(r - 5, r):
-                        draw.regular_polygon((_x, _y, i), _sides, outline=_color)
-        return board_image
+        dc.DrawEllipseList(black_shapes, wx.Pen('green', 5), wx.Brush('green', wx.TRANSPARENT))
+        dc.DrawRectangleList(white_shapes, wx.Pen('blue', 5), wx.Brush('blue', wx.TRANSPARENT))
+        return bmp.ConvertToImage()
 
     def rotate(self, clockwise=True):
         if clockwise:
@@ -233,7 +245,7 @@ class MainFrame(wx.Frame):
             dlg = wx.MessageDialog(self, _('Recognition failed'),
                                    _('Error'),
                                    wx.OK | wx.ICON_INFORMATION
-                                   #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                   # wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
                                    )
             dlg.ShowModal()
             dlg.Destroy()
@@ -273,9 +285,9 @@ class MainFrame(wx.Frame):
     def OnCaptureScreen(self, event):
         def CaptureScreen():
             font = wx.Font()
-            font.SetPointSize(32)
+            font.SetPixelSize(wx.Size(0, 32))
             small_font = wx.Font()
-            small_font.SetPointSize(16)
+            small_font.SetPixelSize(wx.Size(0, 16))
 
             for i in range(3, 0, -1):
                 bmp = wx.Bitmap(512, 256)
