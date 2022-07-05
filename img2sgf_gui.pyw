@@ -3,12 +3,14 @@ import os
 import imgs
 from PIL import Image
 from img2sgf import get_models, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
-from img2sgf.sgf2img import GameImageGenerator, GetAllThemes
+from img2sgf.sgf2img import GameImageGenerator, Theme, GetAllThemes
 import threading
 import numpy as np
 import pyautogui
 import time
 import webbrowser
+import json
+from collections import UserDict
 
 _ = wx.GetTranslation
 
@@ -24,8 +26,9 @@ class NewImageEvent(wx.PyEvent):
 
 
 class Model:
-    def __init__(self, window, board_path='board.pth', stone_path='stone.pth'):
+    def __init__(self, window, board_path='board.pth', stone_path='stone.pth', theme='real-stones'):
         self.window = window
+        self.theme = theme
         self.board_model = self.stone_model = None
 
         def load_model(board_path, stone_path):
@@ -60,7 +63,7 @@ class Model:
         wx.PostEvent(self.window, NewImageEvent(2, self.__get_board_image_with_stones(self.board_image, self.board)))
 
         self.sgf = get_sgf(self.board)
-        wx.PostEvent(self.window, NewImageEvent(3, self.__get_board_image_from_sgf(self.sgf)))
+        wx.PostEvent(self.window, NewImageEvent(3, self.__get_board_image_from_sgf(self.sgf, self.theme)))
         return True
 
     def __get_box_image(self, img, boxes, scores):
@@ -81,10 +84,10 @@ class Model:
             dc.DrawText(f'{scores[i]:.2f}', (box[0], box[1] - font_size))
         return bmp.ConvertToImage()
 
-    def __get_board_image_from_sgf(self, sgf):
+    def __get_board_image_from_sgf(self, sgf, theme):
         TMP_SGF = 'tmp.sgf'
         open(TMP_SGF, 'wb').write(sgf.serialise())
-        gig = GameImageGenerator(GetAllThemes()['real-stones'])
+        gig = GameImageGenerator(Theme(theme))
         sgf_image = gig.get_game_image(TMP_SGF)
         os.remove(TMP_SGF)
         return sgf_image
@@ -127,11 +130,89 @@ class Model:
         wx.PostEvent(self.window, NewImageEvent(3, self.__get_board_image_from_sgf(self.sgf)))
 
 
+class Config(UserDict):
+    def __init__(self, name):
+        self.name = name
+        if os.path.exists(name):
+            self.load(name)
+        else:
+            self.data = {'theme': 'real-stones',
+                         'language': wx.LANGUAGE_DEFAULT}
+
+    def load(self, name):
+        self.data = json.load(open(name))
+
+    def save(self, name=None):
+        if name is None:
+            name = self.name
+        json.dump(self.data, open(name, 'w'))
+
+
+class OptionDialog(wx.Dialog):
+    LANGUAGES = {wx.LANGUAGE_DEFAULT: 'System Default',
+                 wx.LANGUAGE_CHINESE_SIMPLIFIED: wx.Locale.GetLanguageName(wx.LANGUAGE_CHINESE_SIMPLIFIED),
+                 wx.LANGUAGE_ENGLISH: wx.Locale.GetLanguageName(wx.LANGUAGE_ENGLISH)
+                 }
+
+    def __init__(self, config, *args, **kw):
+        super().__init__(*args, **kw)
+
+        gbsizer = wx.GridBagSizer(vgap=5, hgap=5)
+
+        gbsizer.Add(wx.StaticText(self, -1, _('Language')), (1, 1), flag=wx.ALIGN_RIGHT | wx.ALIGN_CENTRE_VERTICAL)
+
+        lang_combobox = wx.ComboBox(self,
+                                    -1,
+                                    self.LANGUAGES[config['language']],
+                                    choices=list(self.LANGUAGES.values()),
+                                    style=wx.CB_READONLY)
+        gbsizer.Add(lang_combobox, (1, 2))
+
+        gbsizer.Add(wx.StaticText(self, -1, _('Theme')), (2, 1), flag=wx.ALIGN_RIGHT | wx.ALIGN_CENTRE_VERTICAL)
+        theme_combobox = wx.ComboBox(self,
+                                     -1,
+                                     config['theme'],
+                                     choices=list(GetAllThemes().keys()),
+                                     style=wx.CB_READONLY
+                                     )
+        theme_combobox.Bind(wx.EVT_COMBOBOX, self.OnThemeChanged)
+
+        gbsizer.Add(theme_combobox, (2, 2))
+
+        self.bmp = wx.StaticBitmap(self, -1)
+        self.__set_theme_image(config['theme'])
+        gbsizer.Add(self.bmp, (3, 2), flag=wx.ALL | wx.EXPAND, border=10)
+
+        btnsizer = wx.StdDialogButtonSizer()
+        btnsizer.AddButton(wx.Button(self, wx.ID_OK))
+        btnsizer.AddButton(wx.Button(self, wx.ID_CANCEL))
+        btnsizer.Realize()
+        gbsizer.Add(btnsizer, (4, 2), flag=wx.ALIGN_RIGHT | wx.ALL | wx.EXPAND, border=10)
+
+        self.SetSizer(gbsizer)
+        self.Layout()
+        self.Fit()
+
+    def OnThemeChanged(self, event):
+        self.__set_theme_image(event.GetString())
+
+    def __set_theme_image(self, theme):
+        TMP_SGF = 'tmp.sgf'
+        open(TMP_SGF, 'w').write('(;GM[1]FF[4]KM[6.5]SZ[19]AB[pd][dp]AW[pp][dd])')
+        gig = GameImageGenerator(Theme(theme))
+        sgf_image = gig.get_game_image(TMP_SGF)
+        os.remove(TMP_SGF)
+        w, h = self.GetSize()
+        img = sgf_image.resize((480, 480))
+        self.bmp.SetBitmap(wx.Bitmap.FromBuffer(*img.size, img.tobytes()))
+
+
 class MainFrame(wx.Frame):
     def __init__(self, parent, title):
         super(MainFrame, self).__init__(parent,
                                         title=title,
                                         size=(840, 480))
+        self.config = Config('img2sgf_gui.json')
         self.Locale = wx.Locale()
         self.Locale.AddCatalogLookupPathPrefix('locale')
         self.Locale.AddCatalog('messages')
@@ -147,6 +228,7 @@ class MainFrame(wx.Frame):
                              imgs.SCREENSHOT.GetBitmap(),
                              _('Capture a screeshot'))
         self.Bind(wx.EVT_TOOL, self.OnCaptureScreen, id=10)
+
         self.toolbar.AddSeparator()
 
         self.toolbar.AddTool(20,
@@ -160,6 +242,7 @@ class MainFrame(wx.Frame):
                              imgs.SAVE.GetBitmap(),
                              _('Save the sgf file'))
         self.Bind(wx.EVT_TOOL, self.OnSaveClick, id=30)
+
         self.toolbar.AddSeparator()
 
         self.toolbar.AddTool(40,
@@ -167,11 +250,13 @@ class MainFrame(wx.Frame):
                              imgs.LEFT.GetBitmap(),
                              _('Rotate left'))
         self.Bind(wx.EVT_TOOL, self.OnRotateClick, id=40)
+
         self.toolbar.AddTool(50,
                              _('Right'),
                              imgs.RIGHT.GetBitmap(),
                              _('Rotate right'))
         self.Bind(wx.EVT_TOOL, self.OnRotateClick, id=50)
+
         self.toolbar.AddSeparator()
 
         self.toolbar.AddTool(60,
@@ -179,6 +264,8 @@ class MainFrame(wx.Frame):
                              imgs.OPTIONS.GetBitmap(),
                              _('Option'),
                              )
+        self.Bind(wx.EVT_TOOL, self.OnOptionClick, id=60)
+
         self.toolbar.AddTool(70,
                              _('Home'),
                              imgs.HOME.GetBitmap(),
@@ -206,6 +293,11 @@ class MainFrame(wx.Frame):
 
         self.model = Model(self)
         self.Connect(-1, -1, EVT_NEW_IMAGE, self.OnSetImage)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def OnClose(self, event):
+        self.config.save()
+        event.Skip()
 
     def OnClientSize(self, event):
         for i in range(4):
@@ -323,6 +415,12 @@ class MainFrame(wx.Frame):
 
     def OnHomeClick(self, event):
         webbrowser.open('https://github.com/noword/image2sgf')
+
+    def OnOptionClick(self, event):
+        dlg = OptionDialog(self.config, self, -1, _('Option'))
+        dlg.CenterOnParent()
+        dlg.ShowModal()
+        dlg.Destroy()
 
 
 class App(wx.App):

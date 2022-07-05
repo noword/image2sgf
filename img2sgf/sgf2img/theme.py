@@ -11,6 +11,8 @@ class Theme:
             self.load(name)
 
     def load(self, name):
+        if not os.path.exists(name):
+            name = f'./themes/{name}/theme.json'
         self._theme = json.load(open(name, 'r', encoding='utf-8'))
         _path = os.path.split(name)[0]
         for key in ('black', 'white', 'board', 'font'):
