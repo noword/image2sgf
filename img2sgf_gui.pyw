@@ -68,7 +68,7 @@ class Model:
 
     def __get_box_image(self, img, boxes, scores):
         w, h = img.size
-        bmp = wx.BitmapFromBuffer(w, h, img.tobytes())
+        bmp = wx.Bitmap.FromBuffer(w, h, img.tobytes())
         dc = wx.MemoryDC(bmp)
 
         y0, y1 = boxes[0, [1, 3]]
@@ -80,7 +80,7 @@ class Model:
         dc.DrawRectangleList(rects, wx.Pen('green', width=font_size // 5), wx.Brush('green', wx.TRANSPARENT))
 
         dc.SetTextForeground('red')
-        for i, box in enumerate(boxes):
+        for i, box in enumerate(boxes.astype(int)):
             dc.DrawText(f'{scores[i]:.2f}', (box[0], box[1] - font_size))
         return bmp.ConvertToImage()
 
@@ -94,7 +94,7 @@ class Model:
 
     def __get_board_image_with_stones(self, board_image, board):
         w, h = board_image.size
-        bmp = wx.BitmapFromBuffer(w, h, board_image.tobytes())
+        bmp = wx.Bitmap.FromBuffer(w, h, board_image.tobytes())
         dc = wx.MemoryDC(bmp)
         box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
         shape_size = int(box_pos.grid_size / 3)
@@ -157,6 +157,7 @@ class OptionDialog(wx.Dialog):
     def __init__(self, config, *args, **kw):
         super().__init__(*args, **kw)
 
+        self.config = config
         gbsizer = wx.GridBagSizer(vgap=5, hgap=5)
 
         gbsizer.Add(wx.StaticText(self, -1, _('Language')), (1, 1), flag=wx.ALIGN_RIGHT | wx.ALIGN_CENTRE_VERTICAL)
@@ -166,6 +167,7 @@ class OptionDialog(wx.Dialog):
                                     self.LANGUAGES[config['language']],
                                     choices=list(self.LANGUAGES.values()),
                                     style=wx.CB_READONLY)
+        lang_combobox.Bind(wx.EVT_COMBOBOX, self.OnLangChanged)
         gbsizer.Add(lang_combobox, (1, 2))
 
         gbsizer.Add(wx.StaticText(self, -1, _('Theme')), (2, 1), flag=wx.ALIGN_RIGHT | wx.ALIGN_CENTRE_VERTICAL)
@@ -184,8 +186,8 @@ class OptionDialog(wx.Dialog):
         gbsizer.Add(self.bmp, (3, 2), flag=wx.ALL | wx.EXPAND, border=10)
 
         btnsizer = wx.StdDialogButtonSizer()
-        btnsizer.AddButton(wx.Button(self, wx.ID_OK))
-        btnsizer.AddButton(wx.Button(self, wx.ID_CANCEL))
+        btnsizer.AddButton(wx.Button(self, wx.ID_OK, _('OK')))
+        btnsizer.AddButton(wx.Button(self, wx.ID_CANCEL, _('Cancel')))
         btnsizer.Realize()
         gbsizer.Add(btnsizer, (4, 2), flag=wx.ALIGN_RIGHT | wx.ALL | wx.EXPAND, border=10)
 
@@ -194,7 +196,13 @@ class OptionDialog(wx.Dialog):
         self.Fit()
 
     def OnThemeChanged(self, event):
-        self.__set_theme_image(event.GetString())
+        theme = event.GetString()
+        self.__set_theme_image(theme)
+        self.config['theme'] = theme
+
+    def OnLangChanged(self, event):
+        d = {v: k for k, v in OptionDialog.LANGUAGES.items()}
+        self.config['language'] = d.get(event.GetString(), wx.LANGUAGE_DEFAULT)
 
     def __set_theme_image(self, theme):
         TMP_SGF = 'tmp.sgf'
@@ -213,7 +221,7 @@ class MainFrame(wx.Frame):
                                         title=title,
                                         size=(840, 480))
         self.config = Config('img2sgf_gui.json')
-        self.Locale = wx.Locale()
+        self.Locale = wx.Locale(self.config['language'])
         self.Locale.AddCatalogLookupPathPrefix('locale')
         self.Locale.AddCatalog('messages')
         self.SetIcon(imgs.GO.GetIcon())
@@ -291,7 +299,7 @@ class MainFrame(wx.Frame):
         self.status = wx.StatusBar(self)
         self.SetStatusBar(self.status)
 
-        self.model = Model(self)
+        self.model = Model(self, theme=self.config['theme'])
         self.Connect(-1, -1, EVT_NEW_IMAGE, self.OnSetImage)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -349,27 +357,27 @@ class MainFrame(wx.Frame):
         self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
 
     def OnOpenClick(self, event):
-        dlg = wx.FileDialog(self,
-                            message=_('Choose a file'),
-                            defaultDir=os.getcwd(),
-                            defaultFile='',
-                            wildcard='|'.join(['pictures|*.jpeg;* .png;*.jpg;*.bmp',
-                                               'All files (*.*)|*.*']),
-                            style=wx.FD_OPEN | wx.FD_CHANGE_DIR | wx.FD_FILE_MUST_EXIST | wx.FD_PREVIEW
-                            )
-        if dlg.ShowModal() == wx.ID_OK:
-            self.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
-            threading.Thread(target=self.Recognize, args=(dlg.GetPath(), )).start()
+        with wx.FileDialog(self,
+                           message=_('Choose a file'),
+                           defaultDir=os.getcwd(),
+                           defaultFile='',
+                           wildcard='|'.join(['pictures(*.jpeg;* .png;*.jpg;*.bmp)|*.jpeg;* .png;*.jpg;*.bmp',
+                                              'All files (*.*)|*.*']),
+                           style=wx.FD_OPEN | wx.FD_CHANGE_DIR | wx.FD_FILE_MUST_EXIST | wx.FD_PREVIEW
+                           ) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                self.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
+                threading.Thread(target=self.Recognize, args=(dlg.GetPath(), )).start()
 
     def OnSaveClick(self, event):
-        dlg = wx.FileDialog(self,
-                            message=_('Save file as ...'), defaultDir=os.getcwd(),
-                            defaultFile='',
-                            wildcard='SGF (*.sgf)|*.sgf',
-                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
-                            )
-        if dlg.ShowModal() == wx.ID_OK:
-            open(dlg.GetPath(), 'wb').write(self.model.sgf.serialise())
+        with wx.FileDialog(self,
+                           message=_('Save file as ...'), defaultDir=os.getcwd(),
+                           defaultFile='',
+                           wildcard='SGF (*.sgf)|*.sgf',
+                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
+                           ) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                open(dlg.GetPath(), 'wb').write(self.model.sgf.serialise())
 
     def OnRotateClick(self, event):
         def rotate(clockwise):
@@ -417,10 +425,11 @@ class MainFrame(wx.Frame):
         webbrowser.open('https://github.com/noword/image2sgf')
 
     def OnOptionClick(self, event):
-        dlg = OptionDialog(self.config, self, -1, _('Option'))
-        dlg.CenterOnParent()
-        dlg.ShowModal()
-        dlg.Destroy()
+        with OptionDialog(self.config, self, -1, _('Option')) as dlg:
+            dlg.CenterOnParent()
+            if dlg.ShowModal() == wx.ID_OK:
+                self.config = dlg.config
+                self.model.theme = self.config['theme']
 
 
 class App(wx.App):
@@ -433,7 +442,7 @@ class App(wx.App):
 
 def run():
     app = App(True, 'img2sgf.log')
-    frame = MainFrame(None, title='img2sgf')
+    frame = MainFrame(None, title='img2sgf v0.01')
     frame.Show()
     app.MainLoop()
 

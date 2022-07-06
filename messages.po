@@ -1,0 +1,105 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2022-07-06 10:12+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: img2sgf_gui.pyw:163
+msgid "Language"
+msgstr "语言"
+
+#: img2sgf_gui.pyw:173
+msgid "Theme"
+msgstr "主题"
+
+#: img2sgf_gui.pyw:189
+msgid "OK"
+msgstr "确定"
+
+#: img2sgf_gui.pyw:190
+msgid "Cancel"
+msgstr "取消"
+
+#: img2sgf_gui.pyw:235
+msgid "Screenshot"
+msgstr "截屏"
+
+#: img2sgf_gui.pyw:237
+msgid "Capture a screeshot"
+msgstr "截取屏幕"
+
+#: img2sgf_gui.pyw:243
+msgid "Open"
+msgstr "打开"
+
+#: img2sgf_gui.pyw:245
+msgid "Open a picture"
+msgstr "打开图片文件"
+
+#: img2sgf_gui.pyw:249
+msgid "Save"
+msgstr "保存"
+
+#: img2sgf_gui.pyw:251
+msgid "Save the sgf file"
+msgstr "保存sgf文件"
+
+#: img2sgf_gui.pyw:257
+msgid "Left"
+msgstr "左转"
+
+#: img2sgf_gui.pyw:259
+msgid "Rotate left"
+msgstr "左转"
+
+#: img2sgf_gui.pyw:263
+msgid "Right"
+msgstr "右转"
+
+#: img2sgf_gui.pyw:265
+msgid "Rotate right"
+msgstr "右转"
+
+#: img2sgf_gui.pyw:271 img2sgf_gui.pyw:273 img2sgf_gui.pyw:428
+msgid "Option"
+msgstr "选项"
+
+#: img2sgf_gui.pyw:278
+msgid "Home"
+msgstr "主页"
+
+#: img2sgf_gui.pyw:280
+msgid "Home page"
+msgstr "主页"
+
+#: img2sgf_gui.pyw:350
+msgid "Recognition failed"
+msgstr "识别失败"
+
+#: img2sgf_gui.pyw:351
+msgid "Error"
+msgstr "错误"
+
+#: img2sgf_gui.pyw:361
+msgid "Choose a file"
+msgstr "选择一个文件"
+
+#: img2sgf_gui.pyw:374
+msgid "Save file as ..."
+msgstr "文件保存为 ..."
+
+#: img2sgf_gui.pyw:405
+msgid "make sure only one board on the screen"
+msgstr "确保只有一个棋盘出现在屏幕上"
+

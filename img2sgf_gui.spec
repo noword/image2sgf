@@ -13,7 +13,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['PyQt5', 'PyQt6', 'PySide6', 'pandas', 'matplotlib', 'torch.distributions', 'torchaudio', 'IPython', 'tcl', 'tcl8', 'tk'],
+    excludes=['PyQt5', 'PyQt6', 'PySide6', 'pandas', 'matplotlib', 'torch.distributions', 'torchaudio', 'IPython', 'tcl', 'tcl8', 'tk', 'scipy'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -27,11 +27,9 @@ for d in a.datas:
             a.datas.remove(d)
 
 for b in a.binaries:
-    for e in EXCLUDES:
+    for e in EXCLUDES[2:]:
         if e in b[0]:
             a.binaries.remove(b)
-        
-#EXTENSION
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
@@ -55,4 +53,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='go.ico',
 )
