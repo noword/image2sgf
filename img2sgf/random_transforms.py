@@ -4,6 +4,7 @@ from typing import Optional, Dict, Sequence
 import random
 import torchvision.transforms as T
 import torchvision.transforms.functional as F
+from .transforms import RandomPhotometricDistort, Compose, ToTensor
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
@@ -210,3 +211,26 @@ class RandomRotation(T.RandomRotation):
         target = perspective_target_with_matrix(target, mat)
 
         return img, target
+
+
+def get_transform(train=False):
+    transforms = []
+    transforms.append(ToTensor())
+    if train:
+        transforms.append(RandomNoise())
+        transforms.append(GaussianBlur((3, 9)))
+        transforms.append(RandomRectBrightness(p=.8))
+        transforms.append(RandomBackground())
+        transforms.append(RandomPhotometricDistort())
+    return Compose(transforms)
+
+
+def get_stone_transform(train=False):
+    transforms = []
+    transforms.append(ToTensor())
+    if train:
+        transforms.append(RandomNoise())
+        transforms.append(RandomPhotometricDistort(brightness=(0.875, 2.)))
+        transforms.append(GaussianBlur((3, 9)))
+        transforms.append(RandomCrop(42))
+    return Compose(transforms)

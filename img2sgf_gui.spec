@@ -13,23 +13,19 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['PyQt5', 'PyQt6', 'PySide6', 'pandas', 'matplotlib', 'torch.distributions', 'torchaudio', 'IPython', 'tcl', 'tcl8', 'tk', 'scipy'],
+    excludes=['PyQt5', 'PyQt6', 'PySide6', 'pandas', 'matplotlib', 'torch.distributions', 'torchaudio', 'IPython', 'tcl', 'tcl8', 'tk', 'scipy', 'cv2'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
 )
 
-EXCLUDES = ['_C.cp38-win_amd64', '_C_flatbuffer.cp38-win_amd64', 'torch\\include', 'opencv_videoio_ffmpeg']
+EXCLUDES = ['_C.cp38-win_amd64', '_C_flatbuffer.cp38-win_amd64']
 for d in a.datas:
     for e in EXCLUDES:
         if e in d[0] or e in d[1]:
             a.datas.remove(d)
 
-for b in a.binaries:
-    for e in EXCLUDES[2:]:
-        if e in b[0]:
-            a.binaries.remove(b)
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 

@@ -1,5 +1,6 @@
 from img2sgf import *
 from img2sgf.stone_dataset import *
+from img2sgf.random_transforms import get_stone_transform
 import time
 import torch
 import os

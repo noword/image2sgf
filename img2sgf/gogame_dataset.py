@@ -44,7 +44,7 @@ class GogameDataset(torch.utils.data.Dataset):
 
         gig = self._generator
 
-        board, plays = gig._get_sgf_info(self.sgfs[idx])
+        board, setups, plays = gig._get_sgf_info(self.sgfs[idx])
         num_plays = len(plays)
 
         end = random.randint(max(1, int(num_plays * 0.8)), len(plays))

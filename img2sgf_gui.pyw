@@ -41,7 +41,7 @@ class Model:
             return False
 
         if isinstance(img, str):
-            img = Image.open(img)
+            img = Image.open(img).convert('RGB')
 
         wx.PostEvent(self.window, NewImageEvent(0, img.copy()))
         wx.PostEvent(self.window, NewImageEvent(1, None))
@@ -59,7 +59,7 @@ class Model:
         _img, boxes, scores = get_board_image(self.board_model, _img)
         self.board = classifier_board(self.stone_model, _img)
 
-        self.board_image = Image.fromarray(_img)
+        self.board_image = _img
         wx.PostEvent(self.window, NewImageEvent(2, self.__get_board_image_with_stones(self.board_image, self.board)))
 
         self.sgf = get_sgf(self.board)
@@ -127,7 +127,7 @@ class Model:
 
         wx.PostEvent(self.window, NewImageEvent(2, self.__get_board_image_with_stones(self.board_image, self.board)))
         self.sgf = get_sgf(self.board)
-        wx.PostEvent(self.window, NewImageEvent(3, self.__get_board_image_from_sgf(self.sgf)))
+        wx.PostEvent(self.window, NewImageEvent(3, self.__get_board_image_from_sgf(self.sgf, self.theme)))
 
 
 class Config(UserDict):
@@ -442,7 +442,7 @@ class App(wx.App):
 
 def run():
     app = App(True, 'img2sgf.log')
-    frame = MainFrame(None, title='img2sgf v0.01')
+    frame = MainFrame(None, title='img2sgf v0.02')
     frame.Show()
     app.MainLoop()
 

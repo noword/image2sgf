@@ -2,9 +2,9 @@ from PIL import Image
 import torchvision
 from .model import get_board_model, get_stone_model
 from .misc import NpBoxPostion
-import cv2
 import numpy as np
 import torchvision.transforms as T
+import torchvision.transforms.functional as F
 import torch
 import os
 from sgfmill import sgf
@@ -57,13 +57,14 @@ def get_board_image(board_model, pil_image: Image):
                  box_pos[0][18][:2]  # bottom right
                  ]
 
-    transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
-    _img = cv2.warpPerspective(np.array(pil_image), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
-
+    # transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
+    # _img = cv2.warpPerspective(np.array(pil_image), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
+    _img = F.perspective(pil_image, startpoints, endpoints)
+    _img = _img.crop((0, 0, DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
     return _img, boxes, scores
 
 
-def classifier_board(stone_model, image: np.array, save_images=False):
+def classifier_board(stone_model, image, save_images=False):
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
     img = T.ToTensor()(image)
     imgs = torch.empty((19 * 19, 3, int(box_pos.grid_size), int(box_pos.grid_size)))
