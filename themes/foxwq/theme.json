@@ -8,5 +8,5 @@
     "board": "badukpan4.png",
     "board_resize": false,
     "line_color": "black",
-    "scaling_ratio":1.1
+    "scaling_ratio":1.05
 }

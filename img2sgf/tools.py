@@ -9,6 +9,7 @@ import torch
 import os
 from sgfmill import sgf
 from datetime import datetime
+import cv2
 
 DEFAULT_IMAGE_SIZE = 1024
 
@@ -57,11 +58,10 @@ def get_board_image(board_model, pil_image: Image):
                  box_pos[0][18][:2]  # bottom right
                  ]
 
-    # transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
-    # _img = cv2.warpPerspective(np.array(pil_image), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
-    _img = F.perspective(pil_image, startpoints, endpoints)
-    _img = _img.crop((0, 0, DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
-    return _img, boxes, scores
+    transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
+    _img = cv2.warpPerspective(np.array(pil_image), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
+
+    return Image.fromarray(_img), boxes, scores
 
 
 def classifier_board(stone_model, image, save_images=False):

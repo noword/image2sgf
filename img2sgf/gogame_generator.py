@@ -7,10 +7,10 @@ import random
 
 
 class BoardGenerator(GameImageGenerator):
-    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, board_rate=0.8):
-        img = super(BoardGenerator, self).get_game_image(sgf_path, img_size, start_number, start, end, board_rate)
+    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None):
+        img = super(BoardGenerator, self).get_game_image(sgf_path, img_size, start_number, start, end)
 
-        box_pos = BoxPostion(self.DEFAULT_WIDTH, 19, board_rate)
+        box_pos = BoxPostion(self.DEFAULT_WIDTH, 19)
         labels = list(range(1, 5))
         boxes = np.array([box_pos[18][0],  # top left
                           box_pos[18][18],  # top right

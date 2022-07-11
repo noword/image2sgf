@@ -56,14 +56,21 @@ class Model:
 
         wx.PostEvent(self.window, NewImageEvent(1, self.__get_box_image(img, boxes, scores)))
 
-        _img, boxes, scores = get_board_image(self.board_model, _img)
+        if min(scores) < 0.85:
+            _img, boxes, scores = get_board_image(self.board_model, _img)
         self.board = classifier_board(self.stone_model, _img)
 
         self.board_image = _img
         wx.PostEvent(self.window, NewImageEvent(2, self.__get_board_image_with_stones(self.board_image, self.board)))
 
         self.sgf = get_sgf(self.board)
-        wx.PostEvent(self.window, NewImageEvent(3, self.__get_board_image_from_sgf(self.sgf, self.theme)))
+        try:
+            img = self.__get_board_image_from_sgf(self.sgf, self.theme)
+        except BaseException as err:
+            print(err)
+            return False
+
+        wx.PostEvent(self.window, NewImageEvent(3, img))
         return True
 
     def __get_box_image(self, img, boxes, scores):
@@ -97,6 +104,12 @@ class Model:
         bmp = wx.Bitmap.FromBuffer(w, h, board_image.tobytes())
         dc = wx.MemoryDC(bmp)
         box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
+        # rects = []
+        # for _boxes in box_pos:
+        #     for box in _boxes:
+        #         rects.append((*box[:2], box_pos.grid_size, box_pos.grid_size))
+        # dc.DrawRectangleList(rects, wx.Pen('violet'), wx.TRANSPARENT_BRUSH)
+
         shape_size = int(box_pos.grid_size / 3)
         half_shape_size = shape_size // 2
         black_shapes = []
@@ -113,8 +126,8 @@ class Model:
                     _x, _y = box_pos._grid_pos[x][y]
                     white_shapes.append((_x - half_shape_size, _y - half_shape_size, shape_size, shape_size))
 
-        dc.DrawEllipseList(black_shapes, wx.Pen('green', 5), wx.Brush('green', wx.TRANSPARENT))
-        dc.DrawRectangleList(white_shapes, wx.Pen('blue', 5), wx.Brush('blue', wx.TRANSPARENT))
+        dc.DrawEllipseList(black_shapes, wx.Pen('green', 5), wx.TRANSPARENT_BRUSH)
+        dc.DrawRectangleList(white_shapes, wx.Pen('blue', 5), wx.TRANSPARENT_BRUSH)
         return bmp.ConvertToImage()
 
     def rotate(self, clockwise=True):
@@ -442,7 +455,7 @@ class App(wx.App):
 
 def run():
     app = App(True, 'img2sgf.log')
-    frame = MainFrame(None, title='img2sgf v0.02')
+    frame = MainFrame(None, title='img2sgf v0.03')
     frame.Show()
     app.MainLoop()
 

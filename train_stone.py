@@ -122,17 +122,21 @@ def main(pth_name, theme_path=None, data_path=None, epochs=10, batch_size=5, num
                                 )
 
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+    best_aac1 = .0
     for epoch in range(epochs):
         train_one_epoch(model, criterion, optimizer, data_loader, device, epoch, 10)
         lr_scheduler.step()
-        evaluate(model, criterion, data_loader_test, device)
-        torch.save(model.state_dict(), pth_name)
+        aac1 = evaluate(model, criterion, data_loader_test, device)
+        if aac1 > best_aac1:
+            best_aac1 = aac1
+            print(f'New best aac1 {best_aac1}')
+            torch.save(model.state_dict(), pth_name)
 
 
 if __name__ == '__main__':
     main(pth_name='stone.pth',
          theme_path='./themes',
          data_path='./stone_data',
-         epochs=10,
+         epochs=20,
          batch_size=32,
          num_workers=2)

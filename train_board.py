@@ -38,7 +38,10 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=(16, 22), gamma=0.1)
 
     num_epochs = 26
-    best_score = 0
+    if os.path.exists('best.score'):
+        best_score = float(open('best.score').read())
+    else:
+        best_score = -9999
     # torch.cuda.memory_summary(device=None, abbreviated=False)
     for epoch in range(num_epochs):
         # torch.cuda.empty_cache()
@@ -52,6 +55,7 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
         print(f'current score: {score}, best score: {best_score}')
         if score > best_score:
             best_score = score
+            open('best.score').write(str(best_score))
             torch.save(model.state_dict(), pth_name)
 
         dataset.initseed()

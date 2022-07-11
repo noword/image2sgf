@@ -50,8 +50,7 @@ class GogameDataset(torch.utils.data.Dataset):
         end = random.randint(max(1, int(num_plays * 0.8)), len(plays))
         start = None if bool(random.getrandbits(1)) else random.randint(1, end)
         start_number = None if bool(random.getrandbits(1)) else 1
-        board_rate = random.uniform(0.8, 0.94)
-        img, labels, boxes = gig.get_game_image(self.sgfs[idx], 1024, start_number, start, end, board_rate)
+        img, labels, boxes = gig.get_game_image(self.sgfs[idx], 1024, start_number, start, end)
         boxes = torch.as_tensor(np.array(boxes), dtype=torch.float32)
         target = {'labels': torch.as_tensor(labels, dtype=torch.int64),
                   'boxes': boxes,
@@ -78,10 +77,11 @@ class GogameDataset(torch.utils.data.Dataset):
             draw = ImageDraw.ImageDraw(_img)
             for box in target['boxes']:
                 draw.rectangle(box.tolist(), outline='green', width=1)
-            for keypoint in target['keypoints']:
-                for k in keypoint:
-                    x, y, v = k
-                    draw.ellipse((x - 2, y - 2, x + 2, y + 2), fill='red', outline='red')
+            if 'keypoints' in target:
+                for keypoint in target['keypoints']:
+                    for k in keypoint:
+                        x, y, v = k
+                        draw.ellipse((x - 2, y - 2, x + 2, y + 2), fill='red', outline='red')
 
         _img.save(name)
 
@@ -125,7 +125,7 @@ class GogameDataset(torch.utils.data.Dataset):
 
             fig.canvas.draw()
 
-            self.save(count)
+            self.save(count, with_target=True)
             # print(target)
             count += 1
             if count >= len(self):
