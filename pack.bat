@@ -1,1 +1,1 @@
-"C:\Program Files\7-Zip\7z.exe" -tzip a img2sgf.zip img2sgf_gui.exe board.pth stone.pth locale themes
+"C:\Program Files\7-Zip\7z.exe" -tzip -mx=9 a img2sgf.zip img2sgf_gui.exe board.pth stone.pth locale themes

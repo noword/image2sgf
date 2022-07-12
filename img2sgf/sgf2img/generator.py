@@ -202,7 +202,7 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
 
         return board, setups, plays[:end]
 
-    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None):
+    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, part_rect=None):
         if img_size != self.DEFAULT_WIDTH:
             self.DEFAULT_WIDTH = img_size
             self.font = ImageFont.truetype(self.theme['font'], int(self.DEFAULT_WIDTH * 0.02))
@@ -280,4 +280,15 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
             for counts in filter(lambda x: len(x) > 1, coor.values()):
                 print(' = '.join([str(c) for c in counts]))
 
+        if part_rect:
+            rect = []
+            for i in part_rect:
+                if i <= 1:
+                    v = 0
+                elif i >= board.side:
+                    v = img_size
+                else:
+                    v = grid_pos[i - 1][i - 1].x + grid_pos.half_grid_size
+                rect.append(v)
+            board_image = board_image.crop(rect)
         return board_image
