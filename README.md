@@ -15,9 +15,11 @@
 
 [pyautogui](https://pypi.org/project/PyAutoGUI/)
 
+for GUI [wxPython](https://www.wxpython.org/)
+
 
 # Usage:
-Download pth files from https://github.com/noword/image2sgf/releases/tag/v0.1
+Download and extract pth files from https://github.com/noword/image2sgf/releases
 
 ```
 usage: img2sgf.py [-h] [--sgf_name SGF_NAME] [--capture] [--save_images] [image_name]
@@ -32,10 +34,15 @@ optional arguments:
   --save_images        save grid images
   ```
 
+
 # Examples:
 
 `img2sgf.py examples\goban.png`
 ![](example/1.jpg)
 
+# GUI
+```img2sgf_gui.pyw```
 
+![](example/gui_0.jpg)
+![](example/gui_1.jpg)
 
