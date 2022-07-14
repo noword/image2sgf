@@ -48,9 +48,9 @@ class GogameGenerator(GameImageGenerator):
 
         grid_pos = GridPosition(self.DEFAULT_WIDTH, board.side, board_rate)
 
-        board_image = self.get_board_image(board.side, board_rate).copy()
+        board_image = self.get_board_image(board.side).copy()
 
-        stone_offset = int(self.get_stone_image('b', board.side, board_rate).size[0] // 2 // self.theme['scaling_ratio'])
+        stone_offset = int(self.get_stone_image('b', board.side).size[0] // 2 // self.theme['scaling_ratio'])
         stone_offset += int(stone_offset * self.theme['adjust_ratio'])
 
         draw = ImageDraw.ImageDraw(board_image)
@@ -89,7 +89,7 @@ class GogameGenerator(GameImageGenerator):
                                       (x0, y0),
                                       stone_image)
 
-                    labels.append(row * 19 + col + (0 if color == 'b' else 361) + 1)
+                    labels.append(row * 19 + col + 1)
                     # mask = np.zeros(board_image.size, dtype=np.uint8)
                     # mask[y0:y0 + stone_mask.shape[1], x0:x0 + stone_mask.shape[0]] = stone_mask
                     # masks.append(mask)
@@ -104,13 +104,13 @@ class GogameGenerator(GameImageGenerator):
                               anchor='mm')
             end -= 1
 
-        for i, (x, y) in enumerate(((0, 0), (18, 0), (0, 18), (18, 18))):
-            if not board.get(x, y):
-                labels.append(723 + i)
-                x0, y0 = grid_pos[x][y]
-                x0 -= grid_pos.grid_size // 2
-                y0 -= grid_pos.grid_size // 2
-                boxes.append(box + [x0, y0, x0, y0])
+        # for i, (x, y) in enumerate(((0, 0), (18, 0), (0, 18), (18, 18))):
+        #     if not board.get(x, y):
+        #         labels.append(723 + i)
+        #         x0, y0 = grid_pos[x][y]
+        #         x0 -= grid_pos.grid_size // 2
+        #         y0 -= grid_pos.grid_size // 2
+        #         boxes.append(box + [x0, y0, x0, y0])
 
         if start:
             for counts in filter(lambda x: len(x) > 1, coor.values()):

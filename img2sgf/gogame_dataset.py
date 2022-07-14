@@ -102,21 +102,14 @@ class GogameDataset(torch.utils.data.Dataset):
             ax.imshow((img.permute(1, 2, 0) * 255).to(torch.uint8))
 
             for i, box in enumerate(target['boxes']):
-                if target['labels'][i] <= 361:
-                    c = 'k'
-                elif target['labels'][i] <= 722:
-                    c = 'w'
-                else:
-                    c = 'r'
-
                 ax.add_patch(Rectangle((box[0], box[1]),
                                        box[2] - box[0],
                                        box[3] - box[1],
                                        linewidth=1,
-                                       edgecolor=c,
+                                       edgecolor='g',
                                        facecolor='none'))
                 x, y = get_xy(int(target['labels'][i]))
-                ax.text(box[0], box[1] + 10, f'{x}{S[y]}', fontsize=10, color='g' if target['labels'][i] <= 723 else 'r')
+                ax.text(box[0], box[1] + 10, f'{x}{S[y]}', fontsize=10, color='r')
 
             if 'keypoints' in target:
                 for kp in target['keypoints']:
