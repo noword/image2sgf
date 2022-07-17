@@ -228,28 +228,40 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
                      None: self.theme['line_color']}
 
         black_img = self.get_stone_image('b', board.side)
+
+        part_rect = [x - 1 for x in part_rect]
+        if part_rect:
+            left, top, right, bottom = part_rect
+        else:
+            left = top = 0
+            right = bottom = board.side
+
         for row, col in setups[0]:
-            x_offset = random.randint(-1, 1)
-            y_offset = random.randint(-1, 1)
-            board_image.paste(black_img,
-                              (grid_pos[row][col].x - stone_offset + x_offset,
-                               grid_pos[row][col].y - stone_offset + y_offset),
-                              black_img)
+            if top <= row <= bottom and left <= col <= right:
+                x_offset = random.randint(-1, 1)
+                y_offset = random.randint(-1, 1)
+                board_image.paste(black_img,
+                                  (grid_pos[row][col].x - stone_offset + x_offset,
+                                   grid_pos[row][col].y - stone_offset + y_offset),
+                                  black_img)
 
         white_img = self.get_stone_image('w', board.side)
         for row, col in setups[1]:
-            x_offset = random.randint(-1, 1)
-            y_offset = random.randint(-1, 1)
-            board_image.paste(white_img,
-                              (grid_pos[row][col].x - stone_offset + x_offset,
-                               grid_pos[row][col].y - stone_offset + y_offset),
-                              white_img)
+            if top <= row <= bottom and left <= col <= right:
+                x_offset = random.randint(-1, 1)
+                y_offset = random.randint(-1, 1)
+                board_image.paste(white_img,
+                                  (grid_pos[row][col].x - stone_offset + x_offset,
+                                   grid_pos[row][col].y - stone_offset + y_offset),
+                                  white_img)
 
         for colour, move in plays[::-1]:
             if move is None:
                 continue
 
             row, col = move
+            if not (top <= row <= bottom and left <= col <= right):
+                continue
             if move in coor:
                 coor[move].append(end)
             else:
@@ -282,13 +294,18 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
 
         if part_rect:
             rect = []
+            part_rect[1], part_rect[3] = part_rect[3], part_rect[1]
             for i in part_rect:
                 if i <= 1:
                     v = 0
                 elif i >= board.side:
                     v = img_size
                 else:
-                    v = grid_pos[i - 1][i - 1].x + grid_pos.half_grid_size
+                    v = grid_pos[i][i].x + grid_pos.half_grid_size
                 rect.append(v)
+
+            rect[1] = img_size - rect[1]
+            rect[3] = img_size - rect[3]
+
             board_image = board_image.crop(rect)
         return board_image
