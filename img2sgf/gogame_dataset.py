@@ -38,6 +38,9 @@ class GogameDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.sgfs)
 
+    def _get_part_rect(self, side):
+        return None
+
     def __getitem__(self, idx):
         random.seed(self.seed + idx)
         torch.manual_seed(self.seed + idx)
@@ -50,7 +53,8 @@ class GogameDataset(torch.utils.data.Dataset):
         end = random.randint(max(1, int(num_plays * 0.8)), len(plays))
         start = None if bool(random.getrandbits(1)) else random.randint(1, end)
         start_number = None if bool(random.getrandbits(1)) else 1
-        img, labels, boxes = gig.get_game_image(self.sgfs[idx], 1024, start_number, start, end)
+        part_rect = self._get_part_rect(board.side)
+        img, labels, boxes = gig.get_game_image(self.sgfs[idx], 1024, start_number, start, end, part_rect=part_rect)
         boxes = torch.as_tensor(np.array(boxes), dtype=torch.float32)
         target = {'labels': torch.as_tensor(labels, dtype=torch.int64),
                   'boxes': boxes,
@@ -151,6 +155,34 @@ class RandomBoardDataset(RandomGogameDataset):
     def _generator(self):
         theme = self.themes[random.randint(0, len(self.themes) - 1)]
         return RandomBoardGenerator(hands_num=self.hands_num, theme=theme, with_coordinates=bool(random.getrandbits(1)))
+
+
+class RandomPartGogameDataset(RandomGogameDataset):
+    def __init__(self, *args, **kwargs):
+        super(RandomPartGogameDataset, self).__init__(*args, **kwargs)
+
+    def _get_part_rect(self, side):
+        part_rect = None
+        half_side = side // 2
+        thirds_side = side // 3
+        r = random.randint(0, 4)
+        r1 = random.randint(thirds_side, half_side)
+        r2 = random.randint(thirds_side, half_side)
+        if r == 0:
+            part_rect = None
+        elif r == 1:
+            # top left
+            part_rect = [0, r1, r2, side]
+        elif r == 2:
+            # bottom left
+            part_rect = [0, 0, r1, r2]
+        elif r == 3:
+            # top right
+            part_rect = [r1, r2, side, side]
+        elif r == 4:
+            # bottom right
+            part_rect = [r1, 0, side, r2]
+        return part_rect
 
 
 if __name__ == '__main__':

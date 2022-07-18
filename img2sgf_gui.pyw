@@ -56,8 +56,10 @@ class Model:
 
         wx.PostEvent(self.window, NewImageEvent(1, self.__get_box_image(img, boxes, scores)))
 
-        if min(scores) < 0.85:
-            _img, boxes, scores = get_board_image(self.board_model, _img)
+        if min(scores) < 0.7:
+            _img0, boxes0, scores0 = get_board_image(self.board_model, _img)
+            if sum(scores0) > sum(scores):
+                _img, boxes, scores = _img0, boxes0, scores0
         self.board = classifier_board(self.stone_model, _img)
 
         self.board_image = _img

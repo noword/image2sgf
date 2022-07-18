@@ -13,7 +13,8 @@ def demo(pil_img, save_images=False):
     img0, boxes0, scores0 = get_board_image(board_model, pil_img)
     print('2nd perspective')
     img1, boxes1, scores1 = get_board_image(board_model, img0)
-    board = classifier_board(stone_model, img1, save_images)
+    img = img0 if sum(scores0) > sum(scores1) else img1
+    board = classifier_board(stone_model, img, save_images)
 
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2)
     plt.subplots_adjust(left=0, right=1, top=0.95, bottom=0, wspace=0.2, hspace=0.3)
@@ -74,7 +75,9 @@ def img2sgf(img, sgf_name, save_images=False):
         img = Image.open(img).convert('RGB')
     _img, _, scores = get_board_image(board_model, img)
     if min(scores) < 0.7:
-        _img, _, _ = get_board_image(board_model, _img)
+        _img0, boxes0, scores0 = get_board_image(board_model, _img)
+        if sum(scores0) > sum(scores):
+            _img, boxes, scores = _img0, boxes0, scores0
 
     board = classifier_board(stone_model, _img, save_images)
     sgf = get_sgf(board)

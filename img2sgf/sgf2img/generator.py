@@ -229,8 +229,8 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
 
         black_img = self.get_stone_image('b', board.side)
 
-        part_rect = [x - 1 for x in part_rect]
         if part_rect:
+            part_rect = [x - 1 for x in part_rect]
             left, top, right, bottom = part_rect
         else:
             left = top = 0
@@ -298,7 +298,7 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
             for i in part_rect:
                 if i <= 1:
                     v = 0
-                elif i >= board.side:
+                elif i >= board.side - 1:
                     v = img_size
                 else:
                     v = grid_pos[i][i].x + grid_pos.half_grid_size

@@ -7,8 +7,8 @@ import random
 
 
 class BoardGenerator(GameImageGenerator):
-    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None):
-        img = super(BoardGenerator, self).get_game_image(sgf_path, img_size, start_number, start, end)
+    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, part_rect=None):
+        img = super(BoardGenerator, self).get_game_image(sgf_path, img_size, start_number, start, end, part_rect)
 
         box_pos = BoxPostion(self.DEFAULT_WIDTH, 19)
         labels = list(range(1, 5))
@@ -33,7 +33,7 @@ def get_stone_mask_box(img):
 
 
 class GogameGenerator(GameImageGenerator):
-    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, board_rate=0.8):
+    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, board_rate=0.8, part_rect=None):
         if img_size != self.DEFAULT_WIDTH:
             self.DEFAULT_WIDTH = img_size
             self.font = ImageFont.truetype(self.theme['font'], int(self.DEFAULT_WIDTH * 0.02))
@@ -90,9 +90,6 @@ class GogameGenerator(GameImageGenerator):
                                       stone_image)
 
                     labels.append(row * 19 + col + 1)
-                    # mask = np.zeros(board_image.size, dtype=np.uint8)
-                    # mask[y0:y0 + stone_mask.shape[1], x0:x0 + stone_mask.shape[0]] = stone_mask
-                    # masks.append(mask)
                     boxes.append(box + [x0, y0, x0, y0])
 
                 if start and end >= start:
@@ -104,19 +101,10 @@ class GogameGenerator(GameImageGenerator):
                               anchor='mm')
             end -= 1
 
-        # for i, (x, y) in enumerate(((0, 0), (18, 0), (0, 18), (18, 18))):
-        #     if not board.get(x, y):
-        #         labels.append(723 + i)
-        #         x0, y0 = grid_pos[x][y]
-        #         x0 -= grid_pos.grid_size // 2
-        #         y0 -= grid_pos.grid_size // 2
-        #         boxes.append(box + [x0, y0, x0, y0])
-
         if start:
             for counts in filter(lambda x: len(x) > 1, coor.values()):
                 print(' = '.join([str(c) for c in counts]))
 
-        # return board_image, labels, boxes, masks
         return board_image, labels, boxes
 
 

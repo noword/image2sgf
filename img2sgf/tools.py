@@ -29,7 +29,13 @@ def get_models(board_path='board.pth', stone_path='stone.pth'):
 
 
 def get_board_image(board_model, pil_image: Image):
-    img = T.ToTensor()(pil_image)
+    if pil_image.mode != 'RGB':
+        pil_image = pil_image.convert('RGB')
+    w = max(pil_image.size)
+    img = Image.new('RGB', (w, w))
+    img.paste(pil_image)
+
+    img = T.ToTensor()(img)
     target = board_model(img.unsqueeze(0))[0]
     # print(target)
     nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.1)
