@@ -1,105 +1,132 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR ORGANIZATION
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# 
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2022-07-06 10:12+0800\n"
+"POT-Creation-Date: 2022-07-19 10:36+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: pygettext.py 1.5\n"
 
+#: img2sgf_gui.pyw:35
+msgid "loading models"
+msgstr "正在载入模型"
 
-#: img2sgf_gui.pyw:163
+#: img2sgf_gui.pyw:50
+msgid "step 1: detect 4 corners of board"
+msgstr "第一步: 检测棋盘的四个角"
+
+#: img2sgf_gui.pyw:59
+msgid "Error: Can't identify the board."
+msgstr "错误: 无法识别棋盘"
+
+#: img2sgf_gui.pyw:63
+msgid "step 2: perspective correct the board, then classify stones"
+msgstr "第二步: 校正棋盘，并识别棋子"
+
+#: img2sgf_gui.pyw:73
+msgid "step 3: generating sgf"
+msgstr "正在生成 sgf"
+
+#: img2sgf_gui.pyw:81
+msgid "Error: Can't generate sgf."
+msgstr "错误: 无法生成 sgf"
+
+#: img2sgf_gui.pyw:83
+msgid "All done. You can save the sgf now."
+msgstr "已完成。现在你可以保存 sgf 文件了。"
+
+#: img2sgf_gui.pyw:187
 msgid "Language"
 msgstr "语言"
 
-#: img2sgf_gui.pyw:173
+#: img2sgf_gui.pyw:197
 msgid "Theme"
 msgstr "主题"
 
-#: img2sgf_gui.pyw:189
+#: img2sgf_gui.pyw:213
 msgid "OK"
 msgstr "确定"
 
-#: img2sgf_gui.pyw:190
+#: img2sgf_gui.pyw:214
 msgid "Cancel"
 msgstr "取消"
 
-#: img2sgf_gui.pyw:235
+#: img2sgf_gui.pyw:259
 msgid "Screenshot"
 msgstr "截屏"
 
-#: img2sgf_gui.pyw:237
+#: img2sgf_gui.pyw:261
 msgid "Capture a screeshot"
 msgstr "截取屏幕"
 
-#: img2sgf_gui.pyw:243
+#: img2sgf_gui.pyw:267
 msgid "Open"
 msgstr "打开"
 
-#: img2sgf_gui.pyw:245
+#: img2sgf_gui.pyw:269
 msgid "Open a picture"
 msgstr "打开图片文件"
 
-#: img2sgf_gui.pyw:249
+#: img2sgf_gui.pyw:273
 msgid "Save"
 msgstr "保存"
 
-#: img2sgf_gui.pyw:251
+#: img2sgf_gui.pyw:275
 msgid "Save the sgf file"
 msgstr "保存sgf文件"
 
-#: img2sgf_gui.pyw:257
+#: img2sgf_gui.pyw:281
 msgid "Left"
 msgstr "左转"
 
-#: img2sgf_gui.pyw:259
+#: img2sgf_gui.pyw:283
 msgid "Rotate left"
 msgstr "左转"
 
-#: img2sgf_gui.pyw:263
+#: img2sgf_gui.pyw:287
 msgid "Right"
 msgstr "右转"
 
-#: img2sgf_gui.pyw:265
+#: img2sgf_gui.pyw:289
 msgid "Rotate right"
 msgstr "右转"
 
-#: img2sgf_gui.pyw:271 img2sgf_gui.pyw:273 img2sgf_gui.pyw:428
+#: img2sgf_gui.pyw:295 img2sgf_gui.pyw:297 img2sgf_gui.pyw:451
 msgid "Option"
 msgstr "选项"
 
-#: img2sgf_gui.pyw:278
+#: img2sgf_gui.pyw:302
 msgid "Home"
 msgstr "主页"
 
-#: img2sgf_gui.pyw:280
+#: img2sgf_gui.pyw:304
 msgid "Home page"
 msgstr "主页"
 
-#: img2sgf_gui.pyw:350
+#: img2sgf_gui.pyw:373
 msgid "Recognition failed"
 msgstr "识别失败"
 
-#: img2sgf_gui.pyw:351
+#: img2sgf_gui.pyw:374
 msgid "Error"
 msgstr "错误"
 
-#: img2sgf_gui.pyw:361
+#: img2sgf_gui.pyw:384
 msgid "Choose a file"
 msgstr "选择一个文件"
 
-#: img2sgf_gui.pyw:374
+#: img2sgf_gui.pyw:397
 msgid "Save file as ..."
 msgstr "文件保存为 ..."
 
-#: img2sgf_gui.pyw:405
+#: img2sgf_gui.pyw:428
 msgid "make sure only one board on the screen"
 msgstr "确保只有一个棋盘出现在屏幕上"
-

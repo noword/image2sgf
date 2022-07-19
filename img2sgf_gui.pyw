@@ -32,7 +32,11 @@ class Model:
         self.board_model = self.stone_model = None
 
         def load_model(board_path, stone_path):
+            self.window.status.SetStatusText(_('loading models'))
             self.board_model, self.stone_model = get_models(board_path, stone_path)
+            self.window.toolbar.EnableTool(10, True)
+            self.window.toolbar.EnableTool(20, True)
+            self.window.status.SetStatusText('')
 
         threading.Thread(target=load_model, args=(board_path, stone_path)).start()
 
@@ -47,14 +51,17 @@ class Model:
         wx.PostEvent(self.window, NewImageEvent(1, None))
         wx.PostEvent(self.window, NewImageEvent(2, None))
         wx.PostEvent(self.window, NewImageEvent(3, None))
+        self.window.status.SetStatusText(_('step 1: detect 4 corners of board'))
 
         try:
             _img, boxes, scores = get_board_image(self.board_model, img)
         except BaseException as err:
+            self.window.status.SetStatusText(_("Error: Can't identify the board."))
             print(err)
             return False
 
         wx.PostEvent(self.window, NewImageEvent(1, self.__get_box_image(img, boxes, scores)))
+        self.window.status.SetStatusText(_('step 2: perspective correct the board, then classify stones'))
 
         if min(scores) < 0.7:
             _img0, boxes0, scores0 = get_board_image(self.board_model, _img)
@@ -64,15 +71,20 @@ class Model:
 
         self.board_image = _img
         wx.PostEvent(self.window, NewImageEvent(2, self.__get_board_image_with_stones(self.board_image, self.board)))
+        self.window.status.SetStatusText(_('step 3: generating sgf'))
 
         self.sgf = get_sgf(self.board)
+
         try:
             img = self.__get_board_image_from_sgf(self.sgf, self.theme)
         except BaseException as err:
             print(err)
+            self.window.status.SetStatusText(_("Error: Can't generate sgf."))
             return False
 
         wx.PostEvent(self.window, NewImageEvent(3, img))
+        self.window.status.SetStatusText(_('All done. You can save the sgf now.'))
+
         return True
 
     def __get_box_image(self, img, boxes, scores):
@@ -295,9 +307,9 @@ class MainFrame(wx.Frame):
                              _('Home page'))
         self.Bind(wx.EVT_TOOL, self.OnHomeClick, id=70)
 
-        self.toolbar.EnableTool(30, False)
-        self.toolbar.EnableTool(40, False)
-        self.toolbar.EnableTool(50, False)
+        for id in range(10, 51, 10):
+            self.toolbar.EnableTool(id, False)
+
         self.toolbar.Realize()
 
         self.client = wx.Panel(self)
@@ -311,8 +323,7 @@ class MainFrame(wx.Frame):
 
         self.client.Bind(wx.EVT_SIZE, self.OnClientSize)
 
-        self.status = wx.StatusBar(self)
-        self.SetStatusBar(self.status)
+        self.status = self.CreateStatusBar(1)
 
         self.model = Model(self, theme=self.config['theme'])
         self.Connect(-1, -1, EVT_NEW_IMAGE, self.OnSetImage)
@@ -457,7 +468,7 @@ class App(wx.App):
 
 def run():
     app = App(True, 'img2sgf.log')
-    frame = MainFrame(None, title='img2sgf v0.03')
+    frame = MainFrame(None, title='img2sgf v0.04')
     frame.Show()
     app.MainLoop()
 

@@ -31,12 +31,26 @@ def get_models(board_path='board.pth', stone_path='stone.pth'):
 def get_board_image(board_model, pil_image: Image):
     if pil_image.mode != 'RGB':
         pil_image = pil_image.convert('RGB')
-    w = max(pil_image.size)
-    img = Image.new('RGB', (w, w))
-    img.paste(pil_image)
 
-    img = T.ToTensor()(img)
-    target = board_model(img.unsqueeze(0))[0]
+    # get a color for background
+    colors = pil_image.getcolors(0xfffffff)
+    if colors is None:
+        c = '#d7b64d'
+    else:
+        colors.sort(key=lambda x: x[0])
+        c = colors[-1][1]
+
+    w, h = pil_image.size
+    width = max(w, h)
+    if min(w, h) / width < 0.9:
+        width = int(width * 1.2)
+
+    img = Image.new('RGB', (width, width), c)
+    x_offset = (width - w) // 2
+    y_offset = (width - h) // 2
+    img.paste(pil_image, (x_offset, y_offset))
+
+    target = board_model(T.ToTensor()(img).unsqueeze(0))[0]
     # print(target)
     nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.1)
     _boxes = target['boxes'].detach()[nms]
@@ -65,7 +79,10 @@ def get_board_image(board_model, pil_image: Image):
                  ]
 
     transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
-    _img = cv2.warpPerspective(np.array(pil_image), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
+    _img = cv2.warpPerspective(np.array(img), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
+
+    boxes[:, ::2] -= x_offset
+    boxes[:, 1::2] -= y_offset
 
     return Image.fromarray(_img), boxes, scores
 
