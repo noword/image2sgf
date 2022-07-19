@@ -33,6 +33,12 @@ def get_stone_mask_box(img):
 
 
 class GogameGenerator(GameImageGenerator):
+    def _filter(self, part_rect, row, col):
+        if part_rect is None:
+            return True
+        left, top, right, bottom = part_rect
+        return top < row < bottom and left < col < right
+
     def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, board_rate=0.8, part_rect=None):
         if img_size != self.DEFAULT_WIDTH:
             self.DEFAULT_WIDTH = img_size
@@ -73,7 +79,7 @@ class GogameGenerator(GameImageGenerator):
             row, col = move
             if move in coor:
                 coor[move].append(end)
-            else:
+            elif self._filter(part_rect, row, col):
                 coor[move] = [end]
                 color = board.get(row, col)
                 x_offset = y_offset = 0
@@ -104,6 +110,27 @@ class GogameGenerator(GameImageGenerator):
         if start:
             for counts in filter(lambda x: len(x) > 1, coor.values()):
                 print(' = '.join([str(c) for c in counts]))
+
+        if part_rect:
+            print(part_rect)
+            rect = []
+            part_rect[1], part_rect[3] = part_rect[3], part_rect[1]
+            for i in part_rect:
+                if i <= 1:
+                    v = 0
+                elif i >= board.side - 1:
+                    v = img_size
+                else:
+                    v = grid_pos[i][i].x + grid_pos.half_grid_size
+                rect.append(v)
+
+            rect[1] = img_size - rect[1]
+            rect[3] = img_size - rect[3]
+
+            board_image = board_image.crop(rect)
+            boxes = np.array(boxes)
+            boxes[:, ::2] -= int(rect[0])
+            boxes[:, 1::2] -= int(rect[1])
 
         return board_image, labels, boxes
 
