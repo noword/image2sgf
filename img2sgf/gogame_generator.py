@@ -95,7 +95,7 @@ class GogameGenerator(GameImageGenerator):
                                       (x0, y0),
                                       stone_image)
 
-                    labels.append(row * 19 + col + 1)
+                    labels.append(row * 18 + col + 1)
                     boxes.append(box + [x0, y0, x0, y0])
 
                 if start and end >= start:
@@ -112,7 +112,6 @@ class GogameGenerator(GameImageGenerator):
                 print(' = '.join([str(c) for c in counts]))
 
         if part_rect:
-            print(part_rect)
             rect = []
             part_rect[1], part_rect[3] = part_rect[3], part_rect[1]
             for i in part_rect:
