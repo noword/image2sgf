@@ -12,7 +12,7 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
     else:
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    model = get_board_model()
+    model = get_part_board_model()
     if os.path.exists(pth_name):
         model.load_state_dict(torch.load(pth_name, map_location=device), strict=False)
     model.to(device)
@@ -69,4 +69,4 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
 
 if __name__ == '__main__':
     # my graphics card only has 4G memory, batch_size had to be set to smaller
-    main('part_board.pth', hands_num=(1, 361), batch_size=1, num_workers=1, data_size=500)
+    main('part_board.pth', hands_num=(1, 361), batch_size=1, num_workers=2, data_size=500)

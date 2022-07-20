@@ -14,7 +14,7 @@ from collections import UserDict
 
 _ = wx.GetTranslation
 
-EVT_NEW_IMAGE = wx.NewId()
+EVT_NEW_IMAGE = wx.NewIdRef()
 
 
 class NewImageEvent(wx.PyEvent):

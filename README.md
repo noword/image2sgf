@@ -13,6 +13,8 @@
 
 [pillow](https://pillow.readthedocs.io/en/stable/)
 
+[sgfmill](https://github.com/mattheww/sgfmill)
+
 [pyautogui](https://pypi.org/project/PyAutoGUI/)
 
 for GUI [wxPython](https://www.wxpython.org/)
