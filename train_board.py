@@ -55,7 +55,7 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
         print(f'current score: {score}, best score: {best_score}')
         if score > best_score:
             best_score = score
-            open('best.score').write(str(best_score))
+            open('best.score', 'w').write(str(best_score))
             torch.save(model.state_dict(), pth_name)
 
         dataset.initseed()

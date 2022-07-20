@@ -112,6 +112,24 @@ class GogameGenerator(GameImageGenerator):
                 print(' = '.join([str(c) for c in counts]))
 
         if part_rect:
+            labels = []
+            boxes = []
+            if len(boxes) == 0:
+                col = part_rect[0] + (part_rect[2] - part_rect[0]) // 2
+                row = part_rect[1] + (part_rect[3] - part_rect[1]) // 2
+
+                stone_image = self.get_stone_image('b', board.side)
+                x_offset = random.randint(-1, 1)
+                y_offset = random.randint(-1, 1)
+                x0 = grid_pos[row][col].x - stone_offset + x_offset
+                y0 = grid_pos[row][col].y - stone_offset + y_offset
+                board_image.paste(stone_image,
+                                  (x0, y0),
+                                  stone_image)
+
+                labels.append(row * 19 + col + 1)
+                boxes.append(box + [x0, y0, x0, y0])
+
             rect = []
             part_rect[1], part_rect[3] = part_rect[3], part_rect[1]
             for i in part_rect:
