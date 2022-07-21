@@ -1,4 +1,4 @@
-from img2sgf import get_models, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
+from img2sgf import get_models, get_board_image, classifier_board, classifer_part_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from PIL import Image
@@ -70,6 +70,21 @@ def demo(pil_img, save_images=False):
     plt.show()
 
 
+def part_demo(pil_img, save_images=False):
+    if isinstance(pil_img, str):
+        pil_img = Image.open(pil_img).convert('RGB')
+    boxes, labels, scores, results = classifer_part_board(part_board_model, stone_model, pil_img, save_images)
+    p = plt.imshow(pil_img)
+    for i, box in enumerate(boxes):
+        p.add_patch(Rectangle((box[0], box[1]),
+                              box[2] - box[0],
+                              box[3] - box[1],
+                              linewidth=1,
+                              edgecolor='g',
+                              facecolor='none'))
+    plt.show()
+
+
 def img2sgf(img, sgf_name, save_images=False):
     if isinstance(img, str):
         img = Image.open(img).convert('RGB')
@@ -93,7 +108,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_images', action='store_true', default=False, help='save grid images')
     args = parser.parse_args()
 
-    board_model, stone_model = get_models()
+    board_model, part_board_model, stone_model = get_models()
 
     if args.capture or args.image_name is None:
         import pyautogui

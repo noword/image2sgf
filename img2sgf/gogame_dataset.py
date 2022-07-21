@@ -122,7 +122,7 @@ class GogameDataset(torch.utils.data.Dataset):
 
             fig.canvas.draw()
 
-            self.save(count, with_target=True)
+            # self.save(count, with_target=True)
             # print(target)
             count += 1
             if count >= len(self):

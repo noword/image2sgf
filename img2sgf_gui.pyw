@@ -33,7 +33,7 @@ class Model:
 
         def load_model(board_path, stone_path):
             self.window.status.SetStatusText(_('loading models'))
-            self.board_model, self.stone_model = get_models(board_path, stone_path)
+            self.board_model, self.part_board_model, self.stone_model = get_models(board_path, 'part_board.pth', stone_path)
             self.window.toolbar.EnableTool(10, True)
             self.window.toolbar.EnableTool(20, True)
             self.window.status.SetStatusText('')
@@ -56,9 +56,13 @@ class Model:
         try:
             _img, boxes, scores = get_board_image(self.board_model, img)
         except BaseException as err:
-            self.window.status.SetStatusText(_("Error: Can't identify the board."))
             print(err)
-            return False
+            try:
+                _img, boxes, scores = get_board_image(self.board_model, img, False)
+            except BaseException as err:
+                self.window.status.SetStatusText(_("Error: Can't identify the board."))
+                print(err)
+                return False
 
         wx.PostEvent(self.window, NewImageEvent(1, self.__get_box_image(img, boxes, scores)))
         self.window.status.SetStatusText(_('step 2: perspective correct the board, then classify stones'))
@@ -468,7 +472,7 @@ class App(wx.App):
 
 def run():
     app = App(True, 'img2sgf.log')
-    frame = MainFrame(None, title='img2sgf v0.04')
+    frame = MainFrame(None, title='img2sgf v0.05')
     frame.Show()
     app.MainLoop()
 

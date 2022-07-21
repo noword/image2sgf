@@ -1,6 +1,6 @@
 from PIL import Image
 import torchvision
-from .model import get_board_model, get_stone_model
+from .model import get_board_model, get_stone_model, get_part_board_model
 from .misc import NpBoxPostion
 import numpy as np
 import torchvision.transforms as T
@@ -14,9 +14,7 @@ import cv2
 DEFAULT_IMAGE_SIZE = 1024
 
 
-def get_models(board_path='board.pth', stone_path='stone.pth'):
-    # board_model = get_board_model_resnet50(thresh=0.5)
-    # board_model.load_state_dict(torch.load('weiqi_board_resnet50.pth', map_location=torch.device('cpu')))
+def get_models(board_path='board.pth', part_board_path='part_board.pth', stone_path='stone.pth'):
     board_model = get_board_model(thresh=0.4)
     board_model.load_state_dict(torch.load(board_path, map_location=torch.device('cpu')))
     board_model.eval()
@@ -25,30 +23,50 @@ def get_models(board_path='board.pth', stone_path='stone.pth'):
     stone_model.load_state_dict(torch.load(stone_path, map_location=torch.device('cpu')))
     stone_model.eval()
 
-    return board_model, stone_model
+    part_board_model = get_part_board_model()
+    part_board_model.load_state_dict(torch.load(part_board_path, map_location=torch.device('cpu')))
+    part_board_model.eval()
+
+    return board_model, part_board_model, stone_model
 
 
-def get_board_image(board_model, pil_image: Image):
-    if pil_image.mode != 'RGB':
-        pil_image = pil_image.convert('RGB')
+def expand_image(pil_image):
+    w, h = pil_image.size
 
     # get a color for background
-    colors = pil_image.getcolors(0xfffffff)
-    if colors is None:
-        c = '#d7b64d'
-    else:
-        colors.sort(key=lambda x: x[0])
-        c = colors[-1][1]
+    colors = {}
+    for y in range(0, h, 10):
+        for x in range(0, w, 10):
+            c = pil_image.getpixel((x, y))
+            if c in colors:
+                colors[c] += 1
+            else:
+                colors[c] = 1
+    colors = [(k, v) for k, v in colors.items()]
+    colors.sort(key=lambda x: x[1])
+    c = colors[-1][0]
 
-    w, h = pil_image.size
     width = max(w, h)
     if min(w, h) / width < 0.9:
         width = int(width * 1.2)
 
     img = Image.new('RGB', (width, width), c)
-    x_offset = (width - w) // 2
-    y_offset = (width - h) // 2
-    img.paste(pil_image, (x_offset, y_offset))
+    left = (width - w) // 2
+    top = (width - h) // 2
+    img.paste(pil_image, (left, top))
+
+    return img, left, top
+
+
+def get_board_image(board_model, pil_image: Image, expand=True):
+    if pil_image.mode != 'RGB':
+        pil_image = pil_image.convert('RGB')
+
+    if expand:
+        img, x_offset, y_offset = expand_image(pil_image)
+    else:
+        img = pil_image
+        x_offset = y_offset = 0
 
     target = board_model(T.ToTensor()(img).unsqueeze(0))[0]
     # print(target)
@@ -56,6 +74,7 @@ def get_board_image(board_model, pil_image: Image):
     _boxes = target['boxes'].detach()[nms]
     _labels = target['labels'].detach()[nms]
     _scores = target['scores'].detach()[nms]
+
     assert len(set(_labels)) >= 4
 
     boxes = np.zeros((4, 4))
@@ -67,7 +86,6 @@ def get_board_image(board_model, pil_image: Image):
             scores[label] = float(_scores[i])
             # print(int(label), float(_scores[i]), boxes[label])
 
-    # print(boxes)
     assert [0] * 4 not in boxes
 
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
@@ -85,6 +103,27 @@ def get_board_image(board_model, pil_image: Image):
     boxes[:, 1::2] -= y_offset
 
     return Image.fromarray(_img), boxes, scores
+
+
+def classifer_part_board(part_board_model, stone_model, pil_image, save_images=False):
+    if pil_image.mode != 'RGB':
+        pil_image = pil_image.convert('RGB')
+
+    target = part_board_model(T.ToTensor()(pil_image).unsqueeze(0))[0]
+    nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.1)
+    _boxes = target['boxes'].detach()[nms]
+    _labels = target['labels'].detach()[nms]
+    _scores = target['scores'].detach()[nms]
+
+    imgs = torch.empty((len(_boxes), 3, 64, 64))
+    for i, box in enumerate(_boxes.to(torch.int32)):
+        img = pil_image.crop(box.tolist())
+        img = img.resize((64, 64))
+        imgs[i] = T.ToTensor()(img)
+
+    results = stone_model(imgs).argmax(1)
+
+    return _boxes, _labels, _scores, results
 
 
 def classifier_board(stone_model, image, save_images=False):
