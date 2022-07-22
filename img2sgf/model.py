@@ -7,7 +7,8 @@ def get_board_model(thresh=0.05):
     #                                                    score_thresh=thresh)
     return models.detection.fcos_resnet50_fpn(num_classes=4 + 1,
                                               detections_per_img=8,
-                                              score_thresh=thresh)
+                                              score_thresh=thresh,
+                                              weights_backbone=None)
 
 
 def get_stone_model():
@@ -18,7 +19,8 @@ def get_stone_model():
 def get_part_board_model(thresh=0.05):
     return models.detection.fcos_resnet50_fpn(num_classes=19 * 19 + 1,
                                               detections_per_img=18 * 18,
-                                              score_thresh=thresh)
+                                              score_thresh=thresh,
+                                              weights_backbone=None)
 
 
 if __name__ == '__main__':

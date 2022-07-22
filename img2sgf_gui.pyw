@@ -393,7 +393,7 @@ class MainFrame(wx.Frame):
                            defaultFile='',
                            wildcard='|'.join(['pictures(*.jpeg;* .png;*.jpg;*.bmp)|*.jpeg;* .png;*.jpg;*.bmp',
                                               'All files (*.*)|*.*']),
-                           style=wx.FD_OPEN | wx.FD_CHANGE_DIR | wx.FD_FILE_MUST_EXIST | wx.FD_PREVIEW
+                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_PREVIEW
                            ) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
                 self.SetCursor(wx.Cursor(wx.CURSOR_WAIT))

@@ -15,17 +15,22 @@ DEFAULT_IMAGE_SIZE = 1024
 
 
 def get_models(board_path='board.pth', part_board_path='part_board.pth', stone_path='stone.pth'):
-    board_model = get_board_model(thresh=0.4)
-    board_model.load_state_dict(torch.load(board_path, map_location=torch.device('cpu')))
-    board_model.eval()
+    board_model = stone_model = part_board_model = None
 
-    stone_model = get_stone_model()
-    stone_model.load_state_dict(torch.load(stone_path, map_location=torch.device('cpu')))
-    stone_model.eval()
+    if os.path.exists(board_path):
+        board_model = get_board_model(thresh=0.4)
+        board_model.load_state_dict(torch.load(board_path, map_location=torch.device('cpu')))
+        board_model.eval()
 
-    part_board_model = get_part_board_model()
-    part_board_model.load_state_dict(torch.load(part_board_path, map_location=torch.device('cpu')))
-    part_board_model.eval()
+    if os.path.exists(stone_path):
+        stone_model = get_stone_model()
+        stone_model.load_state_dict(torch.load(stone_path, map_location=torch.device('cpu')))
+        stone_model.eval()
+
+    if os.path.exists(part_board_path):
+        part_board_model = get_part_board_model()
+        part_board_model.load_state_dict(torch.load(part_board_path, map_location=torch.device('cpu')))
+        part_board_model.eval()
 
     return board_model, part_board_model, stone_model
 
