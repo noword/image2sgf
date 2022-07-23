@@ -112,8 +112,6 @@ class GogameGenerator(GameImageGenerator):
                 print(' = '.join([str(c) for c in counts]))
 
         if part_rect:
-            labels = []
-            boxes = []
             if len(boxes) == 0:
                 col = part_rect[0] + (part_rect[2] - part_rect[0]) // 2
                 row = part_rect[1] + (part_rect[3] - part_rect[1]) // 2

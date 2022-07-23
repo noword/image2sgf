@@ -11,6 +11,7 @@ import time
 import webbrowser
 import json
 from collections import UserDict
+import tempfile
 
 _ = wx.GetTranslation
 
@@ -110,7 +111,7 @@ class Model:
         return bmp.ConvertToImage()
 
     def __get_board_image_from_sgf(self, sgf, theme):
-        TMP_SGF = 'tmp.sgf'
+        TMP_SGF = tempfile.gettempdir() + '/tmp.sgf'
         open(TMP_SGF, 'wb').write(sgf.serialise())
         gig = GameImageGenerator(Theme(theme))
         sgf_image = gig.get_game_image(TMP_SGF)
@@ -236,7 +237,7 @@ class OptionDialog(wx.Dialog):
         self.config['language'] = d.get(event.GetString(), wx.LANGUAGE_DEFAULT)
 
     def __set_theme_image(self, theme):
-        TMP_SGF = 'tmp.sgf'
+        TMP_SGF = tempfile.gettempdir() + '/tmp.sgf'
         open(TMP_SGF, 'w').write('(;GM[1]FF[4]KM[6.5]SZ[19]AB[pd][dp]AW[pp][dd])')
         gig = GameImageGenerator(Theme(theme))
         sgf_image = gig.get_game_image(TMP_SGF)
