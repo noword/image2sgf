@@ -48,15 +48,17 @@ class RandomBackground(torch.nn.Module):
                  img_size_range=(512, 768),
                  bg_size_range=(896, 1536),
                  rotation_degrees=(-30, 30),
-                 donoting_probability=0.1,
-                 perspectiv_probability=0.8
+                 donothing_probability=0.1,
+                 perspectiv_probability=0.8,
+                 distortion_scale=0.4
                  ):
         super().__init__()
         self.img_size_min, self.img_size_max = img_size_range
         self.bg_size_min, self.bg_size_max = bg_size_range
         self.degree_min, self.degree_max = rotation_degrees
-        self.donoting_probability = donoting_probability
+        self.donoting_probability = donothing_probability
         self.perspectiv_probability = perspectiv_probability
+        self.distortion_scale = distortion_scale
         self.bgs = []
         for path in pathlib.Path(dir_path).glob('*.jpg'):
             self.bgs.append(str(path))
@@ -71,7 +73,7 @@ class RandomBackground(torch.nn.Module):
 
     def _perspective(self, img):
         org_h, org_w = img.shape[-2:]
-        startpoints, endpoints = T.RandomPerspective.get_params(org_w, org_h, 0.4)
+        startpoints, endpoints = T.RandomPerspective.get_params(org_w, org_h, self.distortion_scale)
         img = F.perspective(img, startpoints, endpoints)
         mat = cv2.getPerspectiveTransform(np.array(startpoints, np.float32),
                                           np.array(endpoints, np.float32))
@@ -221,6 +223,18 @@ def get_transform(train=False):
         transforms.append(GaussianBlur((3, 9)))
         transforms.append(RandomRectBrightness(p=.8))
         transforms.append(RandomBackground())
+        transforms.append(RandomPhotometricDistort())
+    return Compose(transforms)
+
+
+def get_part_transform(train=False):
+    transforms = []
+    transforms.append(ToTensor())
+    if train:
+        transforms.append(RandomNoise())
+        transforms.append(GaussianBlur((3, 9)))
+        transforms.append(RandomRectBrightness(p=.8))
+        transforms.append(RandomBackground(rotation_degrees=(-10, 10), distortion_scale=0.1))
         transforms.append(RandomPhotometricDistort())
     return Compose(transforms)
 

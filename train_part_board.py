@@ -17,7 +17,7 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
         model.load_state_dict(torch.load(pth_name, map_location=device), strict=False)
     model.to(device)
 
-    dataset = RandomPartGogameDataset(initvar=data_size, hands_num=hands_num, transforms=get_transform(train=True))
+    dataset = RandomPartGogameDataset(initvar=data_size, hands_num=hands_num, transforms=get_part_transform(train=True))
     data_loader = torch.utils.data.DataLoader(dataset,
                                               batch_size=batch_size,
                                               shuffle=True,
@@ -26,7 +26,7 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
 
     dataset_test = RandomPartGogameDataset(initvar=int(data_size * 0.1),
                                            hands_num=hands_num,
-                                           transforms=get_transform(train=True))
+                                           transforms=get_part_transform(train=True))
 
     data_loader_test = torch.utils.data.DataLoader(dataset_test,
                                                    batch_size=1,
