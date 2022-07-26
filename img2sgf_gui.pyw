@@ -260,9 +260,7 @@ class MainFrame(wx.Frame):
         self.Center()
 
         self.toolbar = self.CreateToolBar(wx.TB_FLAT)
-        tsize = (32, 32)
-
-        self.toolbar.SetToolBitmapSize(tsize)
+        self.toolbar.SetToolBitmapSize((32, 32))
         self.toolbar.AddTool(10,
                              _('Screenshot'),
                              imgs.SCREENSHOT.GetBitmap(),
