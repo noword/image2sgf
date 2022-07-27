@@ -12,7 +12,7 @@ def gen(py_name, images, size=(32, 32), tmp_name='tmp.png'):
         os.remove(py_name)
 
     for name in images:
-        img = Image.open(f'{name}.png').resize(SIZE)
+        img = Image.open(f'images/{name}.png').resize(SIZE)
         img.save(tmp_name)
         img2py.img2py(tmp_name, py_name, append=os.path.exists(py_name), imgName=name.upper())
 

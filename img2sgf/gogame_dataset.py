@@ -89,7 +89,7 @@ class GogameDataset(torch.utils.data.Dataset):
 
         _img.save(name)
 
-    def show(self):
+    def show(self, save=False):
         count = 0
         fig, ax = plt.subplots()
 
@@ -122,8 +122,10 @@ class GogameDataset(torch.utils.data.Dataset):
 
             fig.canvas.draw()
 
-            # self.save(count, with_target=True)
-            # print(target)
+            if save:
+                self.save(count, with_target=False)
+                print(target)
+
             count += 1
             if count >= len(self):
                 count = 0

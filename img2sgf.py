@@ -1,4 +1,4 @@
-from img2sgf import get_models, get_board_image, classifier_board, classifer_part_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
+from img2sgf import get_models, get_board_image, classifier_board, classifer_part_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf, get_xy, S
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from PIL import Image
@@ -75,13 +75,18 @@ def part_demo(pil_img, save_images=False):
         pil_img = Image.open(pil_img).convert('RGB')
     boxes, labels, scores, results = classifer_part_board(part_board_model, stone_model, pil_img, save_images)
     p = plt.imshow(pil_img)
+    fig, (ax0, ax1) = plt.subplots(ncols=2)
+    ax0.imshow(pil_img)
+    ax1.imshow(pil_img)
     for i, box in enumerate(boxes):
-        p.add_patch(Rectangle((box[0], box[1]),
-                              box[2] - box[0],
-                              box[3] - box[1],
-                              linewidth=1,
-                              edgecolor='g',
-                              facecolor='none'))
+        ax1.add_patch(Rectangle((box[0], box[1]),
+                                box[2] - box[0],
+                                box[3] - box[1],
+                                linewidth=1,
+                                edgecolor='g',
+                                facecolor='none'))
+        x, y = get_xy(int(labels[i]))
+        ax1.text(box[0], box[1], f'{x}{S[y]}', color='r')
     plt.show()
 
 
