@@ -115,7 +115,7 @@ def classifer_part_board(part_board_model, stone_model, pil_image, save_images=F
         pil_image = pil_image.convert('RGB')
 
     target = part_board_model(T.ToTensor()(pil_image).unsqueeze(0))[0]
-    nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.1)
+    nms = torchvision.ops.nms(target['boxes'], target['scores'], 0.05)
     _boxes = target['boxes'].detach()[nms]
     _labels = target['labels'].detach()[nms]
     _scores = target['scores'].detach()[nms]

@@ -16,7 +16,7 @@ def get_stone_model():
     return models.efficientnet_b3(num_classes=6)
 
 
-def get_part_board_model(thresh=0.05):
+def get_part_board_model(thresh=0.3):
     return models.detection.fcos_resnet50_fpn(num_classes=19 * 19 + 1,
                                               detections_per_img=18 * 18,
                                               score_thresh=thresh,

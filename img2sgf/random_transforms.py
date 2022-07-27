@@ -65,7 +65,8 @@ class RandomBackground(torch.nn.Module):
 
     def _resize(self, img):
         org_h, org_w = img.shape[-2:]
-        img_w = img_h = random.randint(self.img_size_min, self.img_size_max)
+        img_w = random.randint(self.img_size_min, self.img_size_max)
+        img_h = int(org_h * img_w / org_w)
         img = F.resize(img, (img_h, img_w))
         mat = cv2.getPerspectiveTransform(np.array(get_4points_from_box(0, 0, org_w, org_h), np.float32),
                                           np.array(get_4points_from_box(0, 0, img_w, img_h), np.float32))
@@ -83,8 +84,9 @@ class RandomBackground(torch.nn.Module):
         idx = random.randint(1, len(self.bgs) - 1)
 
         org_h, org_w = img.shape[-2:]
-        bg_w = random.randint(org_w, self.bg_size_max)
-        bg_h = random.randint(org_h, self.bg_size_max)
+        max_w = max(self.bg_size_max, org_w, org_h)
+        bg_w = random.randint(org_w, max_w)
+        bg_h = random.randint(org_h, max_w)
         x = random.randint(0, bg_w - org_w)
         y = random.randint(0, bg_h - org_h)
         bg_img = Image.open(self.bgs[idx]).resize((bg_w, bg_h))
@@ -171,7 +173,7 @@ class RandomNoise(torch.nn.Module):
 
 
 class RandomRectBrightness(torch.nn.Module):
-    def __init__(self, p=0.5, brightness=(1., 2.)):
+    def __init__(self, p=0.5, brightness=(1., 1.5)):
         super().__init__()
         self.p = p
         self._brightness = T.ColorJitter(brightness=brightness)

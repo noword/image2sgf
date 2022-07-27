@@ -167,11 +167,13 @@ class RandomPartGogameDataset(RandomGogameDataset):
         part_rect = None
         half_side = side // 2
         thirds_side = side // 3
-        r = random.randint(0, 4)
+        r = random.randint(0, 8)
         r1 = random.randint(thirds_side, half_side)
         r2 = random.randint(thirds_side, half_side)
         if r == 0:
-            part_rect = None
+            # full board
+            # part_rect = None
+            pass
         elif r == 1:
             # top left
             part_rect = [0, r1, r2, side]
@@ -184,6 +186,19 @@ class RandomPartGogameDataset(RandomGogameDataset):
         elif r == 4:
             # bottom right
             part_rect = [r1, 0, side, r2]
+        elif r == 5:
+            # top
+            part_rect = [0, r1, side, side]
+        elif r == 6:
+            # bottom
+            part_rect = [0, 0, side, r1]
+        elif r == 7:
+            # left
+            part_rect = [0, 0, r1, side]
+        elif r == 8:
+            # right
+            part_rect = [r1, 0, side, side]
+
         return part_rect
 
 
