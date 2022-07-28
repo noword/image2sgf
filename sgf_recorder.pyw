@@ -2,8 +2,21 @@ import wx
 from img2sgf import get_models, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
 from img2sgf.sgf2img import GameImageGenerator, Theme, GetAllThemes
 import recorder_imgs
+import cv2
 
 _ = wx.GetTranslation
+
+
+def get_camera_num():
+    index = 0
+    while True:
+        cap = cv2.VideoCapture(index)
+        if not cap.read()[0]:
+            break
+        else:
+            index += 1
+            cap.release()
+    return index
 
 
 class MainFrame(wx.Frame):
@@ -17,7 +30,13 @@ class MainFrame(wx.Frame):
         self.toolbar = self.CreateToolBar(wx.TB_FLAT)
         self.toolbar.SetToolBitmapSize((32, 32))
 
-        source_cbox = wx.ComboBox(self.toolbar, size=(150, -1), style=wx.CB_DROPDOWN)
+        self.toolbar.AddControl(wx.StaticText(self.toolbar, label=_('Video Stream Source')))
+        source_cbox = wx.ComboBox(self.toolbar,
+                                  value=_('Screenshot'),
+                                  size=(150, -1),
+                                  choices=[_('Screenshot')] + [_('Camera ') + str(i) for i in range(get_camera_num())],
+                                  style=wx.CB_DROPDOWN)
+        self.Bind(wx.EVT_COMBOBOX, self.OnVideoSourceChanged, source_cbox)
         self.toolbar.AddControl(source_cbox)
 
         self.toolbar.AddTool(10,
@@ -68,6 +87,18 @@ class MainFrame(wx.Frame):
                              _('Home page'))
         # self.Bind(wx.EVT_TOOL, self.OnHomeClick, id=70)
         self.toolbar.Realize()
+
+        self.client = wx.Panel(self)
+        self.images = [None] * 4
+        sizer = wx.GridSizer(2, 2, 1, 1)
+        self.bitmaps = [wx.StaticBitmap(self.client) for i in range(4)]
+        sizer.AddMany(self.bitmaps)
+        self.client.SetSizer(sizer)
+
+        self.status = self.CreateStatusBar(1)
+
+    def OnVideoSourceChanged(self, event):
+        print(event.GetSelection())
 
 
 class App(wx.App):
