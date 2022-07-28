@@ -261,57 +261,29 @@ class MainFrame(wx.Frame):
 
         self.toolbar = self.CreateToolBar(wx.TB_FLAT)
         self.toolbar.SetToolBitmapSize((32, 32))
-        self.toolbar.AddTool(10,
-                             _('Screenshot'),
-                             imgs.SCREENSHOT.GetBitmap(),
-                             _('Capture a screeshot'))
-        self.Bind(wx.EVT_TOOL, self.OnCaptureScreen, id=10)
 
-        self.toolbar.AddSeparator()
+        _id = 10
+        for label, bmp, shorthelp, handler in ((_('Screenshot'), imgs.SCREENSHOT.GetBitmap(), _('Capture a screeshot'), self.OnCaptureScreen),
+                                               (None, None, None, None),
+                                               (_('Open'), imgs.OPEN.GetBitmap(), _('Open a picture'), self.OnOpenClick),
+                                               (_('Save'), imgs.SAVE.GetBitmap(), _('Save the sgf file'), self.OnSaveClick),
+                                               (None, None, None, None),
+                                               (_('Left'), imgs.LEFT.GetBitmap(), _('Rotate left'), self.OnRotateClick),
+                                               (_('Right'), imgs.RIGHT.GetBitmap(), _('Rotate right'), self.OnRotateClick),
+                                               (None, None, None, None),
+                                               (_('Option'), imgs.OPTIONS.GetBitmap(), _('Option'), self.OnOptionClick),
+                                               (_('Home'), imgs.HOME.GetBitmap(), _('Home page'), self.OnHomeClick)
+                                               ):
+            if label is None:
+                self.toolbar.AddSeparator()
+            else:
+                self.toolbar.AddTool(_id, label, bmp, shorthelp)
+                if handler:
+                    self.Bind(wx.EVT_TOOL, handler, id=_id)
+                _id += 10
 
-        self.toolbar.AddTool(20,
-                             _('Open'),
-                             imgs.OPEN.GetBitmap(),
-                             _('Open a picture'))
-        self.Bind(wx.EVT_TOOL, self.OnOpenClick, id=20)
-
-        self.toolbar.AddTool(30,
-                             _('Save'),
-                             imgs.SAVE.GetBitmap(),
-                             _('Save the sgf file'))
-        self.Bind(wx.EVT_TOOL, self.OnSaveClick, id=30)
-
-        self.toolbar.AddSeparator()
-
-        self.toolbar.AddTool(40,
-                             _('Left'),
-                             imgs.LEFT.GetBitmap(),
-                             _('Rotate left'))
-        self.Bind(wx.EVT_TOOL, self.OnRotateClick, id=40)
-
-        self.toolbar.AddTool(50,
-                             _('Right'),
-                             imgs.RIGHT.GetBitmap(),
-                             _('Rotate right'))
-        self.Bind(wx.EVT_TOOL, self.OnRotateClick, id=50)
-
-        self.toolbar.AddSeparator()
-
-        self.toolbar.AddTool(60,
-                             _('Option'),
-                             imgs.OPTIONS.GetBitmap(),
-                             _('Option'),
-                             )
-        self.Bind(wx.EVT_TOOL, self.OnOptionClick, id=60)
-
-        self.toolbar.AddTool(70,
-                             _('Home'),
-                             imgs.HOME.GetBitmap(),
-                             _('Home page'))
-        self.Bind(wx.EVT_TOOL, self.OnHomeClick, id=70)
-
-        for id in range(10, 51, 10):
-            self.toolbar.EnableTool(id, False)
+        for _id in range(10, 51, 10):
+            self.toolbar.EnableTool(_id, False)
 
         self.toolbar.Realize()
 
