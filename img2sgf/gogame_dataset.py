@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from datetime import datetime
 from PIL import ImageDraw
+import os
+import json
 
 
 class GogameDataset(torch.utils.data.Dataset):
@@ -200,6 +202,44 @@ class RandomPartGogameDataset(RandomGogameDataset):
             part_rect = [r1, 0, side, side]
 
         return part_rect
+
+
+def gen_cache(dataset, path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    for i in range(len(dataset)):
+        if os.path.exists(f'{path}/{i}.jpg'):
+            continue
+        if i % 10 == 0:
+            print(i)
+        img, target = dataset[i]
+        torchvision.utils.save_image(img, f'{path}/{i}.jpg')
+        target = dict([k, v.tolist()] for k, v in target.items())
+        json.dump(target, open(f'{path}/{i}.json', 'w'))
+
+
+class CachedDataset:
+    def __init__(self, root):
+        self.root = root
+        self.img_names = list(filter(lambda x: os.path.splitext(x)[-1].lower() == '.jpg', os.listdir(root)))
+
+    def __len__(self):
+        return len(self.img_names)
+
+    def __getitem__(self, idx):
+        name = f'{self.root}/{self.img_names[idx]}'
+        img = torchvision.io.read_image(name) / 255
+        n = list(os.path.splitext(name))
+        n[-1] = '.json'
+        name = ''.join(n)
+
+        target = json.load(open(name))
+        target = dict([k, torch.tensor(v)] for k, v in target.items())
+        return img, target
+
+    def show(self):
+        return GogameDataset.show(self)
 
 
 if __name__ == '__main__':

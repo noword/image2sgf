@@ -23,5 +23,13 @@ def get_part_board_model(thresh=0.3):
                                               weights_backbone=None)
 
 
+def get_board_mobile_model(thresh=0.05):
+    return models.detection.ssdlite320_mobilenet_v3_large(num_classes=4 + 1,
+                                                          detections_per_img=8,
+                                                          score_thresh=thresh,
+                                                          weights_backbone=None
+                                                          )
+
+
 if __name__ == '__main__':
     print(get_board_model())
