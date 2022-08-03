@@ -63,14 +63,18 @@ def expand_image(pil_image):
     return img, left, top
 
 
-def get_board_image(board_model, pil_image: Image, expand=True):
-    if pil_image.mode != 'RGB':
-        pil_image = pil_image.convert('RGB')
+def get_board_position(board_model, image, expand=True):
+    # return 4 corners info
+    if isinstance(image, str):
+        image = Image.open(image).convert('RGB')
+
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
 
     if expand:
-        img, x_offset, y_offset = expand_image(pil_image)
+        img, x_offset, y_offset = expand_image(image)
     else:
-        img = pil_image
+        img = image
         x_offset = y_offset = 0
 
     target = board_model(T.ToTensor()(img).unsqueeze(0))[0]
@@ -93,6 +97,15 @@ def get_board_image(board_model, pil_image: Image, expand=True):
 
     assert [0] * 4 not in boxes
 
+    boxes[:, ::2] -= x_offset
+    boxes[:, 1::2] -= y_offset
+
+    return boxes, scores
+
+
+def get_board_image(board_model, img, expand=True):
+    boxes, scores = get_board_position(board_model, img, expand)
+
     box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
     startpoints = boxes[:, :2].tolist()
     endpoints = [box_pos[18][0][:2],  # top left
@@ -103,9 +116,6 @@ def get_board_image(board_model, pil_image: Image, expand=True):
 
     transform = cv2.getPerspectiveTransform(np.array(startpoints, np.float32), np.array(endpoints, np.float32))
     _img = cv2.warpPerspective(np.array(img), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
-
-    boxes[:, ::2] -= x_offset
-    boxes[:, 1::2] -= y_offset
 
     return Image.fromarray(_img), boxes, scores
 
