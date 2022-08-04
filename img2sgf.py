@@ -1,4 +1,4 @@
-from img2sgf import get_models, get_board_image, classifier_board, classifer_part_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf, get_xy, S
+from img2sgf import get_board_model, get_stone_model, get_board_image, classifier_board, classifer_part_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf, get_xy, S
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from PIL import Image
@@ -113,7 +113,10 @@ if __name__ == '__main__':
     parser.add_argument('--save_images', action='store_true', default=False, help='save grid images')
     args = parser.parse_args()
 
-    board_model, part_board_model, stone_model = get_models()
+    board_model = get_board_model()
+    board_model.eval()
+    stone_model = get_stone_model()
+    stone_model.eval()
 
     if args.capture or args.image_name is None:
         import pyautogui

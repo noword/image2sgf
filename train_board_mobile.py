@@ -22,9 +22,7 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
     else:
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    model = get_board_mobile_model()
-    if os.path.exists(pth_name):
-        model.load_state_dict(torch.load(pth_name, map_location=device), strict=False)
+    model = get_board_mobile_model(pth_name)
     model.to(device)
 
     dataset_test = CachedDataset(TEST_PATH)
@@ -35,7 +33,7 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
                                                    collate_fn=utils.collate_fn)
     dataset = CachedDataset(TRAIN_PATH)
     indices = torch.randperm(len(dataset))
-    sampler = torch.utils.data.SubsetRandomSampler(indices[:3000])
+    sampler = torch.utils.data.SubsetRandomSampler(indices[:1000])
     data_loader = torch.utils.data.DataLoader(dataset,
                                               batch_size=batch_size,
                                               shuffle=False,
@@ -77,4 +75,5 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
 
 
 if __name__ == '__main__':
-    main('board_mobile.pth', hands_num=(1, 361), batch_size=8, num_workers=1, data_size=10000)
+    for i in range(10):
+        main('board_mobile.pth', hands_num=(1, 361), batch_size=1, num_workers=1, data_size=15000)

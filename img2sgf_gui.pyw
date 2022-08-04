@@ -2,7 +2,7 @@ import wx
 import os
 import imgs
 from PIL import Image
-from img2sgf import get_models, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
+from img2sgf import get_board_model, get_stone_model, get_board_mobile_model, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
 from img2sgf.sgf2img import GameImageGenerator, Theme, GetAllThemes
 import threading
 import numpy as np
@@ -34,7 +34,11 @@ class Model:
 
         def load_model(board_path, stone_path):
             self.window.status.SetStatusText(_('loading models'))
-            self.board_model, self.part_board_model, self.stone_model = get_models(board_path, 'part_board.pth', stone_path)
+            self.board_model = get_board_model(board_path)
+            # self.board_model = get_board_mobile_model()
+            self.board_model.eval()
+            self.stone_model = get_stone_model(stone_path)
+            self.stone_model.eval()
             self.window.toolbar.EnableTool(10, True)
             self.window.toolbar.EnableTool(20, True)
             self.window.status.SetStatusText('')

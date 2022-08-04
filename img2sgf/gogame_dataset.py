@@ -13,6 +13,8 @@ from datetime import datetime
 from PIL import ImageDraw
 import os
 import json
+# import cv2
+# import torchvision.transforms as transforms
 
 
 class GogameDataset(torch.utils.data.Dataset):
@@ -227,19 +229,32 @@ class CachedDataset:
     def __len__(self):
         return len(self.img_names)
 
+    def _get_image(self, name):
+        return torchvision.io.read_image(name) / 255
+
+    def _get_target(self, name):
+        target = json.load(open(name))
+        return dict([k, torch.tensor(v)] for k, v in target.items())
+
     def __getitem__(self, idx):
         name = f'{self.root}/{self.img_names[idx]}'
-        img = torchvision.io.read_image(name) / 255
         n = list(os.path.splitext(name))
         n[-1] = '.json'
-        name = ''.join(n)
+        json_name = ''.join(n)
 
-        target = json.load(open(name))
-        target = dict([k, torch.tensor(v)] for k, v in target.items())
-        return img, target
+        return self._get_image(name), self._get_target(json_name)
 
     def show(self):
         return GogameDataset.show(self)
+
+
+# class CachedEdgesDataset(CachedDataset):
+#     def _get_image(self, name):
+#         img = cv2.imread(name)
+#         img = cv2.GaussianBlur(img, (3, 3), 0)
+#         img = cv2.Canny(img, 50, 150)
+#         img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+#         return transforms.ToTensor()(img)
 
 
 if __name__ == '__main__':

@@ -13,8 +13,6 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     model = get_board_model()
-    if os.path.exists(pth_name):
-        model.load_state_dict(torch.load(pth_name, map_location=device), strict=False)
     model.to(device)
 
     dataset = RandomBoardDataset(initvar=data_size, hands_num=hands_num, transforms=get_transform(train=True))

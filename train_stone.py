@@ -91,8 +91,6 @@ def evaluate(model, criterion, data_loader, device, print_freq=100, log_suffix='
 def main(pth_name, theme_path=None, data_path=None, epochs=10, batch_size=5, num_workers=1, device=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = get_stone_model()
-    if os.path.exists(pth_name):
-        model.load_state_dict(torch.load(pth_name, map_location=device))
     model.to(device)
 
     _dataset = StoneDataset(theme_path=theme_path,
