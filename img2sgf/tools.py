@@ -14,27 +14,6 @@ import cv2
 DEFAULT_IMAGE_SIZE = 1024
 
 
-# def get_models(board_path='board.pth', part_board_path='part_board.pth', stone_path='stone.pth'):
-#     board_model = stone_model = part_board_model = None
-
-#     if os.path.exists(board_path):
-#         board_model = get_board_model(thresh=0.4)
-#         board_model.load_state_dict(torch.load(board_path, map_location=torch.device('cpu')))
-#         board_model.eval()
-
-#     if os.path.exists(stone_path):
-#         stone_model = get_stone_model()
-#         stone_model.load_state_dict(torch.load(stone_path, map_location=torch.device('cpu')))
-#         stone_model.eval()
-
-#     if os.path.exists(part_board_path):
-#         part_board_model = get_part_board_model()
-#         part_board_model.load_state_dict(torch.load(part_board_path, map_location=torch.device('cpu')))
-#         part_board_model.eval()
-
-#     return board_model, part_board_model, stone_model
-
-
 def expand_image(pil_image):
     w, h = pil_image.size
 
@@ -198,3 +177,49 @@ def get_sgf(board):
     root_node.set('AP', ('img2sgf', '1.0'))
     root_node.set_setup_stones(blacks, whites)
     return game
+
+
+def classifier_board_kmeans(image):
+    if isinstance(image, Image.Image):
+        image = np.array(image)[:, :, ::-1]
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    edge_gray = cv2.Canny(gray, 50, 200, apertureSize=3, L2gradient=True)
+    maxblur = 3
+    blurs = [gray, edge_gray]
+    for i in range(maxblur + 1):
+        b = 2 * i + 1
+        blurs.append(cv2.medianBlur(gray, b))
+        blurs.append(cv2.GaussianBlur(gray, (b, b), b))
+
+    points = set()
+    bp = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
+    for b in blurs:
+        c = cv2.HoughCircles(b, cv2.HOUGH_GRADIENT, 1, 10, np.array([]), 100, 30, 1, 30)
+        for x, y, r in c[0]:
+            point = bp.get_xy(x, y)
+            if point:
+                points.add(point)
+
+    points = list(points)
+    colors = []
+    for x, y in points:
+        x0, y0, x1, y1 = [int(x) for x in bp[y][x]]
+        img = image[y0:y1, x0:x1]
+        average = np.float32(img.mean(axis=0).mean(axis=0))
+        colors.append(average)
+
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    _, labels, centers = cv2.kmeans(np.array(colors), 2, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+    results = np.zeros((19, 19), dtype=int)
+    c0 = np.sum(centers[0])
+    c1 = np.sum(centers[1])
+
+    for i, (x, y) in enumerate(points):
+        label = labels[i]
+        if c0 > c1:
+            label = int(not label)
+        results[y][x] = (label + 1) << 1
+
+    return results

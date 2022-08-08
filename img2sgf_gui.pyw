@@ -2,7 +2,7 @@ import wx
 import os
 import imgs
 from PIL import Image
-from img2sgf import get_board_model, get_stone_model, get_board_mobile_model, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
+from img2sgf import get_board_model, get_stone_model, get_board_mobile_model, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf, classifier_board_kmeans
 from img2sgf.sgf2img import GameImageGenerator, Theme, GetAllThemes
 import threading
 import numpy as np
@@ -77,6 +77,7 @@ class Model:
             if sum(scores0) > sum(scores):
                 _img, boxes, scores = _img0, boxes0, scores0
         self.board = classifier_board(self.stone_model, _img)
+        # self.board = classifier_board_kmeans(_img)
 
         self.board_image = _img
         wx.PostEvent(self.window, NewImageEvent(2, self.__get_board_image_with_stones(self.board_image, self.board)))

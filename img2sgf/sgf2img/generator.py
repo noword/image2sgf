@@ -79,6 +79,18 @@ class GridPosition:
     def __getitem__(self, index):
         return self._grid_pos[index]
 
+    def get_xy(self, x, y):
+        # get coords from pixel
+        if not(self.x0 - self.half_grid_size < x < self.x1 + self.half_grid_size
+               and self.y0 - self.half_grid_size < y < self.y1 + self.half_grid_size):
+            return None
+
+        x -= self.x0 - self.half_grid_size
+        y -= self.y0 - self.half_grid_size
+        y = self.board_width + self.grid_size - y
+
+        return int(x // self.grid_size), int(y // self.grid_size)
+
 
 class BaseGenerator:
     DEFAULT_WIDTH = 1024
