@@ -1,5 +1,5 @@
 import wx
-from img2sgf import get_models, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
+from img2sgf import get_board_model, get_stone_model, get_board_position, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
 from img2sgf.sgf2img import GameImageGenerator, Theme, GetAllThemes
 import recorder_imgs
 import cv2
@@ -24,6 +24,33 @@ def get_camera_num():
     return index
 
 
+def img_wx_to_pil(img):
+    buf = bytes(img.GetData())
+    w, h = img.GetSize()
+    img = Image.new('RGB', (w, h))
+    img.frombytes(buf)
+    return img
+
+
+def img_pil_to_wx(img):
+    w, h = img.size
+    return wx.ImageFromBuffer(w, h, img.tobytes())
+
+
+def img_wx_to_cv2(img):
+    buf = bytes(img.GetData())
+    w, h = img.GetSize()
+    img = numpy.ndarray(shape=(h, w, 3), dtype=numpy.uint8, buffer=buf)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    return img
+
+
+def img_cv2_to_wx(img):
+    h, w = img.shape[:2]
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return wx.ImageFromBuffer(w, h, img)
+
+
 EVT_NEW_IMAGE = wx.NewIdRef()
 
 
@@ -35,27 +62,18 @@ class NewImageEvent(wx.PyEvent):
         self.image = image
 
 
-class Model:
-    def __init__(self, window, board_path='board.pth', stone_path='stone.pth', theme='real-stones'):
-        self.window = window
-        self.theme = theme
-        self.board_model = self.stone_model = None
-
-        def load_model(board_path, stone_path):
-            self.window.status.SetStatusText(_('loading models'))
-            self.board_model, self.part_board_model, self.stone_model = get_models(board_path, 'part_board.pth', stone_path)
-            self.window.toolbar.EnableTool(10, True)
-            self.window.status.SetStatusText('')
-
-        threading.Thread(target=load_model, args=(board_path, stone_path)).start()
-
-
 class MainFrame(wx.Frame):
     def __init__(self, parent, title):
         super(MainFrame, self).__init__(parent,
                                         title=title,
                                         size=(840, 480))
-        self.model = Model(self)
+        self.boxes = self.scores = None
+        box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
+        self.endpoints = [box_pos[18][0][:2],  # top left
+                          box_pos[18][18][:2],  # top right
+                          box_pos[0][0][:2],  # bottom left
+                          box_pos[0][18][:2]  # bottom right
+                          ]
 
         self.SetIcon(recorder_imgs.GO.GetIcon())
         self.Center()
@@ -73,7 +91,7 @@ class MainFrame(wx.Frame):
         self.toolbar.AddControl(source_cbox)
 
         _id = 10
-        for label, bmp, shorthelp, handler in ((_('Detect'), recorder_imgs.DETECT.GetBitmap(), _('Detect the board'), None),
+        for label, bmp, shorthelp, handler in ((_('Detect'), recorder_imgs.DETECT.GetBitmap(), _('Detect the board'), self.OnDetectClick),
                                                (None, None, None, None,),
                                                (_('Record'), recorder_imgs.RECORD.GetBitmap(), _('Start recording'), None),
                                                (_('Pause'), recorder_imgs.PAUSE.GetBitmap(), _('Pause'), None),
@@ -117,6 +135,17 @@ class MainFrame(wx.Frame):
         self.stream_thread = threading.Thread(target=self.VideoStreamThread)
         self.stream_thread.start()
 
+        threading.Thread(target=self._LoadModel, args=('board.pth', 'stone.pth')).start()
+
+    def _LoadModel(self, board_path, stone_path):
+        self.status.SetStatusText(_('loading models'))
+        self.board_model = get_board_model(board_path)
+        self.board_model.eval()
+        self.stone_model = get_stone_model(stone_path)
+        self.stone_model.eval()
+        self.toolbar.EnableTool(10, True)
+        self.status.SetStatusText('')
+
     def OnClose(self, event):
         self.running.set()
         self.stream_thread.join()
@@ -152,14 +181,19 @@ class MainFrame(wx.Frame):
     def OnSetImage(self, event):
         img = event.image
         if isinstance(img, Image.Image):
-            w, h = event.image.size
-            img = wx.ImageFromBuffer(w, h, img.tobytes())
+            img = img_pil_to_wx(img)
         elif isinstance(img, numpy.ndarray):
-            h, w = img.shape[:2]
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img = wx.ImageFromBuffer(w, h, img)
+            img = img_cv2_to_wx(img)
         self.images[event.index] = img
         self.RefreshImage(event.index)
+
+        if event.index == 0 and self.boxes is not None:
+            startpoints = self.boxes[:, :2].tolist()
+
+            transform = cv2.getPerspectiveTransform(numpy.array(startpoints, numpy.float32),
+                                                    numpy.array(self.endpoints, numpy.float32))
+            _img = cv2.warpPerspective(img_wx_to_cv2(img), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
+            wx.PostEvent(self, NewImageEvent(1, _img))
 
     def RefreshImage(self, index):
         def rescale(img, w, h):
@@ -181,6 +215,14 @@ class MainFrame(wx.Frame):
             img = rescale(img, w, h)
             bmp = wx.Bitmap(img)
         self.bitmaps[index].SetBitmap(bmp)
+
+    def OnDetectClick(self, event):
+        img = img_wx_to_pil(self.images[0])
+        try:
+            self.boxes, self.scores = get_board_position(self.board_model, img, True)
+        except BaseException:
+            self.boxes = self.scores = None
+        # print(self.boxes, self.scores)
 
 
 class App(wx.App):
