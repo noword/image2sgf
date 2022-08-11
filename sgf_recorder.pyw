@@ -8,6 +8,7 @@ from PIL import Image
 import threading
 import time
 import numpy
+from sgfmill import sgf
 
 _ = wx.GetTranslation
 
@@ -67,13 +68,8 @@ class MainFrame(wx.Frame):
         super(MainFrame, self).__init__(parent,
                                         title=title,
                                         size=(840, 480))
-        self.boxes = self.scores = None
-        box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
-        self.endpoints = [box_pos[18][0][:2],  # top left
-                          box_pos[18][18][:2],  # top right
-                          box_pos[0][0][:2],  # bottom left
-                          box_pos[0][18][:2]  # bottom right
-                          ]
+        self.transform = None
+        self.sgf = sgf.Sgf_game(size=19)
 
         self.SetIcon(recorder_imgs.GO.GetIcon())
         self.Center()
@@ -187,13 +183,9 @@ class MainFrame(wx.Frame):
         self.images[event.index] = img
         self.RefreshImage(event.index)
 
-        if event.index == 0 and self.boxes is not None:
-            startpoints = self.boxes[:, :2].tolist()
-
-            transform = cv2.getPerspectiveTransform(numpy.array(startpoints, numpy.float32),
-                                                    numpy.array(self.endpoints, numpy.float32))
-            _img = cv2.warpPerspective(img_wx_to_cv2(img), transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
-            wx.PostEvent(self, NewImageEvent(1, _img))
+        if event.index == 0 and self.transform is not None:
+            img = cv2.warpPerspective(img_wx_to_cv2(img), self.transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
+            wx.PostEvent(self, NewImageEvent(1, img))
 
     def RefreshImage(self, index):
         def rescale(img, w, h):
@@ -217,11 +209,29 @@ class MainFrame(wx.Frame):
         self.bitmaps[index].SetBitmap(bmp)
 
     def OnDetectClick(self, event):
+        self.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
         img = img_wx_to_pil(self.images[0])
         try:
             self.boxes, self.scores = get_board_position(self.board_model, img, True)
         except BaseException:
-            self.boxes = self.scores = None
+            self.transform = None
+            self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
+            return
+
+        startpoints = self.boxes[:, :2].tolist()
+        box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
+        endpoints = [box_pos[18][0][:2],  # top left
+                     box_pos[18][18][:2],  # top right
+                     box_pos[0][0][:2],  # bottom left
+                     box_pos[0][18][:2]  # bottom right
+                     ]
+        self.transform = cv2.getPerspectiveTransform(numpy.array(startpoints, numpy.float32),
+                                                     numpy.array(endpoints, numpy.float32))
+
+        self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
+        self.toolbar.EnableTool(20, False)
+        self.toolbar.EnableTool(50, False)
+        self.toolbar.EnableTool(60, False)
         # print(self.boxes, self.scores)
 
 
