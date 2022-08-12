@@ -9,6 +9,8 @@ import threading
 import time
 import numpy
 from sgfmill import sgf
+import torch
+import torchvision
 
 _ = wx.GetTranslation
 
@@ -52,6 +54,84 @@ def img_cv2_to_wx(img):
     return wx.ImageFromBuffer(w, h, img)
 
 
+def img_pil_to_cv2(img):
+    return numpy.array(img)[:, :, ::-1]
+
+
+def img_cv2_to_pil(img):
+    return Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+
+def to_cv2(img):
+    if isinstance(img, wx.Image):
+        return img_wx_to_cv2(img)
+    elif isinstance(img, Image.Image):
+        return img_pil_to_cv2(img)
+    elif isinstance(img, numpy.ndarray):
+        return img
+    else:
+        raise TypeError
+
+
+def to_pil(img):
+    if isinstance(img, wx.Image):
+        return img_wx_to_pil(img)
+    elif isinstance(img, numpy.ndarray):
+        return img_cv2_to_pil(img)
+    elif isinstance(img, Image.Image):
+        return img
+    else:
+        raise TypeError
+
+
+def to_wx(img):
+    if isinstance(img, Image.Image):
+        return img_pil_to_wx(img)
+    elif isinstance(img, numpy.ndarray):
+        return img_cv2_to_wx(img)
+    elif isinstance(img, wx.Image):
+        return img
+    else:
+        raise TypeError
+
+
+class SgfRecorder:
+    def __init__(self, model):
+        self.stone_model = model
+        self.box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
+        self.sgf = sgf.Sgf_game(size=19)
+        self.last_imgs = None
+
+    def refresh(self, img):
+        img = to_cv2(img)
+        imgs = self._splite_img(img)
+        if self.last_imgs is None:
+            board = self._classify(imgs).reshape(19, 19)
+            blacks = []
+            whites = []
+            for y in range(19):
+                for x in range(19):
+                    color = board[x][y] >> 1
+                    if color == 1:
+                        blacks.append([x, y])
+                    elif color == 2:
+                        whites.append([x, y])
+            self.sgf.get_root().set_setup_stones(blacks, whites)
+        self.last_imgs = imgs
+
+    def _classify(self, imgs):
+        return self.stone_model(imgs).argmax(1)
+
+    def _splite_img(self, img):
+        img = torchvision.transforms.ToTensor()(img)
+        imgs = torch.empty((19 * 19, 3, int(self.box_pos.grid_size), int(self.box_pos.grid_size)))
+        for y in range(19):
+            for x in range(19):
+                x0, y0, x1, y1 = self.box_pos[y][x].astype(int)
+                imgs[x + y * 19] = img[:, y0:y1, x0:x1]
+        return imgs
+
+
 EVT_NEW_IMAGE = wx.NewIdRef()
 
 
@@ -69,7 +149,6 @@ class MainFrame(wx.Frame):
                                         title=title,
                                         size=(840, 480))
         self.transform = None
-        self.sgf = sgf.Sgf_game(size=19)
 
         self.SetIcon(recorder_imgs.GO.GetIcon())
         self.Center()
@@ -139,6 +218,7 @@ class MainFrame(wx.Frame):
         self.board_model.eval()
         self.stone_model = get_stone_model(stone_path)
         self.stone_model.eval()
+        self.sgf_recorder = SgfRecorder(self.stone_model)
         self.toolbar.EnableTool(10, True)
         self.status.SetStatusText('')
 
@@ -176,16 +256,15 @@ class MainFrame(wx.Frame):
 
     def OnSetImage(self, event):
         img = event.image
-        if isinstance(img, Image.Image):
-            img = img_pil_to_wx(img)
-        elif isinstance(img, numpy.ndarray):
-            img = img_cv2_to_wx(img)
+        img = to_wx(img)
         self.images[event.index] = img
         self.RefreshImage(event.index)
 
         if event.index == 0 and self.transform is not None:
             img = cv2.warpPerspective(img_wx_to_cv2(img), self.transform, (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))
             wx.PostEvent(self, NewImageEvent(1, img))
+        elif event.index == 1:
+            self.sgf_recorder.refresh(img)
 
     def RefreshImage(self, index):
         def rescale(img, w, h):
@@ -210,28 +289,51 @@ class MainFrame(wx.Frame):
 
     def OnDetectClick(self, event):
         self.SetCursor(wx.Cursor(wx.CURSOR_WAIT))
+        self.toolbar.EnableTool(10, False)
+        self.toolbar.EnableTool(20, False)
+        self.toolbar.EnableTool(50, False)
+        self.toolbar.EnableTool(60, False)
+
         img = img_wx_to_pil(self.images[0])
         try:
             self.boxes, self.scores = get_board_position(self.board_model, img, True)
         except BaseException:
-            self.transform = None
-            self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
-            return
+            self.transform = self.boxes = self.scores = None
 
-        startpoints = self.boxes[:, :2].tolist()
-        box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
-        endpoints = [box_pos[18][0][:2],  # top left
-                     box_pos[18][18][:2],  # top right
-                     box_pos[0][0][:2],  # bottom left
-                     box_pos[0][18][:2]  # bottom right
-                     ]
-        self.transform = cv2.getPerspectiveTransform(numpy.array(startpoints, numpy.float32),
-                                                     numpy.array(endpoints, numpy.float32))
+        if self.boxes is not None:
+            startpoints = self.boxes[:, :2].tolist()
+            box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
+            endpoints = [box_pos[18][0][:2],  # top left
+                         box_pos[18][18][:2],  # top right
+                         box_pos[0][0][:2],  # bottom left
+                         box_pos[0][18][:2]  # bottom right
+                         ]
+            self.transform = cv2.getPerspectiveTransform(numpy.array(startpoints, numpy.float32),
+                                                         numpy.array(endpoints, numpy.float32))
+            self.toolbar.EnableTool(20, True)
+            self.toolbar.EnableTool(50, True)
+            self.toolbar.EnableTool(60, True)
+            dlg = wx.MessageDialog(self, _("THe board has been detected, don't move the camera any more"),
+                                   _('Notice'),
+                                   wx.OK | wx.ICON_INFORMATION
+                                   # wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                   )
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            self.images[1] = None
+            self.RefreshImage(1)
+            dlg = wx.MessageDialog(self, _('Failed to discover any board'),
+                                   _('Error'),
+                                   wx.OK | wx.ICON_INFORMATION
+                                   # wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                   )
+            dlg.ShowModal()
+            dlg.Destroy()
 
+        self.toolbar.EnableTool(10, True)
         self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
-        self.toolbar.EnableTool(20, False)
-        self.toolbar.EnableTool(50, False)
-        self.toolbar.EnableTool(60, False)
+
         # print(self.boxes, self.scores)
 
 
