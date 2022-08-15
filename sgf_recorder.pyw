@@ -1,6 +1,6 @@
 import wx
 from img2sgf import get_board_model, get_stone_model, get_board_position, get_board_image, classifier_board, NpBoxPostion, DEFAULT_IMAGE_SIZE, get_sgf
-from img2sgf.sgf2img import GameImageGenerator, Theme, GetAllThemes
+from img2sgf.sgf2img import GameImageGenerator, Theme, GetAllThemes, GridPosition
 import recorder_imgs
 import cv2
 import pyautogui
@@ -99,14 +99,14 @@ class SgfRecorder:
     def __init__(self, model):
         self.stone_model = model
         self.box_pos = NpBoxPostion(width=DEFAULT_IMAGE_SIZE, size=19)
+        self.grid_pos = GridPosition(width=DEFAULT_IMAGE_SIZE, size=19)
         self.sgf = sgf.Sgf_game(size=19)
-        self.last_imgs = None
+        self.last_img = None
 
     def refresh(self, img):
         img = to_cv2(img)
-        imgs = self._splite_img(img)
-        if self.last_imgs is None:
-            board = self._classify(imgs).reshape(19, 19)
+        if self.last_img is None:
+            board = self._classify(self._splite_img(img)).reshape(19, 19)
             blacks = []
             whites = []
             for y in range(19):
@@ -117,7 +117,24 @@ class SgfRecorder:
                     elif color == 2:
                         whites.append([x, y])
             self.sgf.get_root().set_setup_stones(blacks, whites)
-        self.last_imgs = imgs
+        else:
+
+            poses = []
+            for y in range(19):
+                for x in range(19):
+                    _x, _y = self.grid_pos[y][x]
+                    if cv2.norm(img[_y, _x], self.last_img[_y, _x]) > 0.1:
+                        poses.append((y, x))
+            if 0 < len(poses) < 19 * 8:
+                imgs = []
+                for y, x in poses:
+                    x0, y0, x1, y1 = self.box_pos[y][x].astype(int)
+                    imgs.append(torchvision.transforms.ToTensor()(img[y0:y1, x0:x1]))
+
+                results = self._classify(torch.stack(imgs))
+                print([r >> 1 for r in results])
+                print(poses)
+        self.last_img = img
 
     def _classify(self, imgs):
         return self.stone_model(imgs).argmax(1)
@@ -244,7 +261,7 @@ class MainFrame(wx.Frame):
             else:
                 img = pyautogui.screenshot()
                 wx.PostEvent(self, NewImageEvent(0, img))
-            time.sleep(0.1)
+            time.sleep(0.2)
 
     def OnVideoSourceChanged(self, event):
         if self.cap:
