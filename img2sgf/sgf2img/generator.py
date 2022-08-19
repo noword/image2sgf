@@ -187,8 +187,15 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
         super(GameImageGenerator, self).__init__(*args, **kwargs)
 
     def _get_sgf_info(self, sgf_path, end=None):
+        if isinstance(sgf_path, str):
+            sgf_bytes = open(sgf_path, 'rb').read()
+        elif isinstance(sgf_path, bytes):
+            sgf_bytes = sgf_path
+        else:
+            raise TypeError
+
         try:
-            sgf_game = sgf.Sgf_game.from_bytes(open(sgf_path, 'rb').read())
+            sgf_game = sgf.Sgf_game.from_bytes(sgf_bytes)
         except ValueError:
             raise Exception("bad sgf file")
 
