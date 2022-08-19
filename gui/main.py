@@ -68,13 +68,25 @@ class MainFrame(wx.Frame):
         self.client = wx.Panel(self)
 
         self.client.SetBackgroundColour(wx.WHITE)
-        self.images = [None] * 4
-        sizer = wx.GridSizer(2, 2, 1, 1)
-        self.bitmaps = [wx.StaticBitmap(self.client) for i in range(4)]
-        sizer.AddMany(self.bitmaps)
+        self.images = [None] * 3
+
+        self.splitter = wx.SplitterWindow(self.client)
+        self.right_splitter = wx.SplitterWindow(self.splitter)
+        self.bitmaps = [wx.StaticBitmap(self.splitter),
+                        wx.StaticBitmap(self.right_splitter),
+                        wx.StaticBitmap(self.right_splitter)]
+
+        self.right_splitter.SplitHorizontally(self.bitmaps[1], self.bitmaps[2])
+        self.splitter.SplitVertically(self.bitmaps[0], self.right_splitter)
+        self.right_splitter.SetSashGravity(0.5)
+        self.splitter.SetSashGravity(0.5)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.splitter, 1, wx.EXPAND)
         self.client.SetSizer(sizer)
 
         self.client.Bind(wx.EVT_SIZE, self.OnClientSize)
+        self.splitter.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.OnClientSize)
+        self.right_splitter.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.OnClientSize)
 
         self.status = self.CreateStatusBar(1)
 
@@ -107,7 +119,6 @@ class MainFrame(wx.Frame):
         wx.PostEvent(self, NewImageEvent(0, img.copy()))
         wx.PostEvent(self, NewImageEvent(1, None))
         wx.PostEvent(self, NewImageEvent(2, None))
-        wx.PostEvent(self, NewImageEvent(3, None))
         self.status.SetStatusText(_('step 1: detect 4 corners of board'))
 
         try:
@@ -121,7 +132,7 @@ class MainFrame(wx.Frame):
                 print(err)
                 return False
 
-        wx.PostEvent(self, NewImageEvent(1, self.__GetBoxImage(img, boxes, scores)))
+        wx.PostEvent(self, NewImageEvent(0, self.__GetBoxImage(img, boxes, scores)))
         self.status.SetStatusText(_('step 2: perspective correct the board, then classify stones'))
 
         if min(scores) < 0.7:
@@ -132,7 +143,7 @@ class MainFrame(wx.Frame):
         # self.board = classifier_board_kmeans(_img)
 
         self.board_image = _img
-        wx.PostEvent(self, NewImageEvent(2, self.__GetBoardImageWithStones(self.board_image, self.board)))
+        wx.PostEvent(self, NewImageEvent(1, self.__GetBoardImageWithStones(self.board_image, self.board)))
         self.status.SetStatusText(_('step 3: generating sgf'))
 
         self.sgf = get_sgf(self.board)
@@ -144,9 +155,8 @@ class MainFrame(wx.Frame):
             self.status.SetStatusText(_("Error: Can't generate sgf."))
             return False
 
-        wx.PostEvent(self, NewImageEvent(3, img))
+        wx.PostEvent(self, NewImageEvent(2, img))
         self.status.SetStatusText(_('All done. You can save the sgf now.'))
-
         return True
 
     def __GetBoxImage(self, img, boxes, scores):
@@ -211,16 +221,16 @@ class MainFrame(wx.Frame):
             self.board_image = self.board_image.rotate(90)
             self.board = numpy.rot90(self.board, 3)
 
-        wx.PostEvent(self, NewImageEvent(2, self.__GetBoardImageWithStones(self.board_image, self.board)))
+        wx.PostEvent(self, NewImageEvent(1, self.__GetBoardImageWithStones(self.board_image, self.board)))
         self.sgf = get_sgf(self.board)
-        wx.PostEvent(self, NewImageEvent(3, self.__GetBoardImageFromSgf(self.sgf, self.config['theme'])))
+        wx.PostEvent(self, NewImageEvent(2, self.__GetBoardImageFromSgf(self.sgf, self.config['theme'])))
 
     def OnClose(self, event):
         self.config.save()
         event.Skip()
 
     def OnClientSize(self, event):
-        for i in range(4):
+        for i in range(3):
             self.RefreshImage(i)
         event.Skip()
 
@@ -240,7 +250,16 @@ class MainFrame(wx.Frame):
             bmp = wx.NullBitmap
         else:
             windowsize = self.client.GetSize()
-            w, h = windowsize.x // 2, windowsize.y // 2
+            # print(windowsize, self.splitter.GetSashPosition(), self.right_splitter.GetSashPosition())
+            if index == 0:
+                w = self.splitter.GetSashPosition()
+                h = windowsize.y
+            elif index == 1:
+                w = windowsize.x - self.splitter.GetSashPosition()
+                h = self.right_splitter.GetSashPosition()
+            else:  # index == 2
+                w = windowsize.x - self.splitter.GetSashPosition()
+                h = windowsize.y - self.right_splitter.GetSashPosition()
             img = rescale(img, w, h)
             bmp = wx.Bitmap(img)
         self.bitmaps[index].SetBitmap(bmp)
