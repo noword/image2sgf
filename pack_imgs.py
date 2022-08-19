@@ -17,5 +17,5 @@ def gen(py_name, images, size=(32, 32), tmp_name='tmp.png'):
         img2py.img2py(tmp_name, py_name, append=os.path.exists(py_name), imgName=name.upper())
 
 
-gen('imgs.py', ('screenshot', 'open', 'save', 'left', 'right', 'go', 'home', 'options'))
+gen('gui/imgs.py', ('screenshot', 'open', 'save', 'left', 'right', 'go', 'home', 'options'))
 gen('recorder_imgs.py', ('go', 'detect', 'save', 'left', 'right', 'record', 'pause', 'stop', 'home', 'options'))
