@@ -98,6 +98,17 @@ class MainFrame(wx.Frame):
         self.board_model = self.stone_model = None
 
         def load_model():
+            for name in ('board.pth', 'stone.pth'):
+                if not os.path.exists(name):
+                    dlg = wx.MessageDialog(self, name + _(' is missing'),
+                                           _('Error'),
+                                           wx.OK | wx.ICON_INFORMATION
+                                           # wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                           )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    return
+
             self.status.SetStatusText(_('loading models'))
             self.board_model = get_board_model()
             self.board_model.eval()
