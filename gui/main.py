@@ -11,6 +11,7 @@ from .option import OptionDialog
 from img2sgf import get_board_model, get_stone_model, get_board_image, classifier_board, get_sgf, NpBoxPostion, DEFAULT_IMAGE_SIZE
 from img2sgf.sgf2img import GameImageGenerator, Theme, GetAllThemes
 import numpy
+from .widgets import ImagePanel
 
 _ = wx.GetTranslation
 
@@ -72,21 +73,25 @@ class MainFrame(wx.Frame):
 
         self.splitter = wx.SplitterWindow(self.client)
         self.right_splitter = wx.SplitterWindow(self.splitter)
-        self.bitmaps = [wx.StaticBitmap(self.splitter),
-                        wx.StaticBitmap(self.right_splitter),
-                        wx.StaticBitmap(self.right_splitter)]
+        self.original_panel = ImagePanel(self.splitter)
+        self.board_panel = ImagePanel(self.right_splitter)
+        self.sgf_panel = ImagePanel(self.right_splitter)
+        self.panels = [self.original_panel, self.board_panel, self.sgf_panel]
+        # self.bitmaps = [wx.StaticBitmap(self.splitter),
+        #                 wx.StaticBitmap(self.right_splitter),
+        #                 wx.StaticBitmap(self.right_splitter)]
 
-        self.right_splitter.SplitHorizontally(self.bitmaps[1], self.bitmaps[2])
-        self.splitter.SplitVertically(self.bitmaps[0], self.right_splitter)
+        self.right_splitter.SplitHorizontally(self.board_panel, self.sgf_panel)
+        self.splitter.SplitVertically(self.original_panel, self.right_splitter)
         self.right_splitter.SetSashGravity(0.5)
         self.splitter.SetSashGravity(0.5)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.splitter, 1, wx.EXPAND)
         self.client.SetSizer(sizer)
 
-        self.client.Bind(wx.EVT_SIZE, self.OnClientSize)
-        self.splitter.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.OnClientSize)
-        self.right_splitter.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.OnClientSize)
+        # self.client.Bind(wx.EVT_SIZE, self.OnClientSize)
+        # self.splitter.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.OnClientSize)
+        # self.right_splitter.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.OnClientSize)
 
         self.status = self.CreateStatusBar(1)
 
@@ -240,48 +245,43 @@ class MainFrame(wx.Frame):
         self.config.save()
         event.Skip()
 
-    def OnClientSize(self, event):
-        for i in range(3):
-            self.RefreshImage(i)
-        event.Skip()
+    # def OnClientSize(self, event):
+    #     for i in range(3):
+    #         self.RefreshImage(i)
+    #     event.Skip()
 
-    def RefreshImage(self, index):
-        def rescale(img, w, h):
-            ow, oh = img.GetSize()
-            if w / h > ow / oh:
-                new_w = int(h / oh * ow)
-                new_h = h
-            else:
-                new_w = w
-                new_h = int(w / ow * oh)
-            return img.Copy().Rescale(new_w, new_h, wx.IMAGE_QUALITY_HIGH)
+    # def RefreshImage(self, index):
+    #     def rescale(img, w, h):
+    #         ow, oh = img.GetSize()
+    #         if w / h > ow / oh:
+    #             new_w = int(h / oh * ow)
+    #             new_h = h
+    #         else:
+    #             new_w = w
+    #             new_h = int(w / ow * oh)
+    #         return img.Copy().Rescale(new_w, new_h, wx.IMAGE_QUALITY_HIGH)
 
-        img = self.images[index]
-        if img is None:
-            bmp = wx.NullBitmap
-        else:
-            windowsize = self.client.GetSize()
-            # print(windowsize, self.splitter.GetSashPosition(), self.right_splitter.GetSashPosition())
-            if index == 0:
-                w = self.splitter.GetSashPosition()
-                h = windowsize.y
-            elif index == 1:
-                w = windowsize.x - self.splitter.GetSashPosition()
-                h = self.right_splitter.GetSashPosition()
-            else:  # index == 2
-                w = windowsize.x - self.splitter.GetSashPosition()
-                h = windowsize.y - self.right_splitter.GetSashPosition()
-            img = rescale(img, w, h)
-            bmp = wx.Bitmap(img)
-        self.bitmaps[index].SetBitmap(bmp)
+    #     img = self.images[index]
+    #     if img is None:
+    #         bmp = wx.NullBitmap
+    #     else:
+    #         windowsize = self.client.GetSize()
+    #         # print(windowsize, self.splitter.GetSashPosition(), self.right_splitter.GetSashPosition())
+    #         if index == 0:
+    #             w = self.splitter.GetSashPosition()
+    #             h = windowsize.y
+    #         elif index == 1:
+    #             w = windowsize.x - self.splitter.GetSashPosition()
+    #             h = self.right_splitter.GetSashPosition()
+    #         else:  # index == 2
+    #             w = windowsize.x - self.splitter.GetSashPosition()
+    #             h = windowsize.y - self.right_splitter.GetSashPosition()
+    #         img = rescale(img, w, h)
+    #         bmp = wx.Bitmap(img)
+    #     self.bitmaps[index].SetBitmap(bmp)
 
     def OnSetImage(self, event):
-        img = event.image
-        if isinstance(img, Image.Image):
-            w, h = event.image.size
-            img = wx.ImageFromBuffer(w, h, img.tobytes())
-        self.images[event.index] = img
-        self.RefreshImage(event.index)
+        self.panels[event.index].SetImage(event.image)
 
     def Recognize(self, img):
         [self.toolbar.EnableTool(i, False) for i in range(10, 60, 10)]
@@ -319,7 +319,7 @@ class MainFrame(wx.Frame):
                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
                            ) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
-                open(dlg.GetPath(), 'wb').write(self.model.sgf.serialise())
+                open(dlg.GetPath(), 'wb').write(self.sgf.serialise())
 
     def OnRotateClick(self, event):
         def rotate(clockwise):
