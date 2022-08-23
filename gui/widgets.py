@@ -44,6 +44,9 @@ class ImagePanel(wx.Panel):
             self.img = to_wx(img)
             self._SetBmp()
 
+    def IsEmpty(self):
+        return self.img is None
+
     def _SetBmp(self):
         def rescale(img, w, h):
             ow, oh = img.GetSize()

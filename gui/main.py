@@ -69,7 +69,6 @@ class MainFrame(wx.Frame):
         self.client = wx.Panel(self)
 
         self.client.SetBackgroundColour(wx.WHITE)
-        self.images = [None] * 3
 
         self.splitter = wx.SplitterWindow(self.client)
         self.right_splitter = wx.SplitterWindow(self.splitter)
@@ -245,41 +244,6 @@ class MainFrame(wx.Frame):
         self.config.save()
         event.Skip()
 
-    # def OnClientSize(self, event):
-    #     for i in range(3):
-    #         self.RefreshImage(i)
-    #     event.Skip()
-
-    # def RefreshImage(self, index):
-    #     def rescale(img, w, h):
-    #         ow, oh = img.GetSize()
-    #         if w / h > ow / oh:
-    #             new_w = int(h / oh * ow)
-    #             new_h = h
-    #         else:
-    #             new_w = w
-    #             new_h = int(w / ow * oh)
-    #         return img.Copy().Rescale(new_w, new_h, wx.IMAGE_QUALITY_HIGH)
-
-    #     img = self.images[index]
-    #     if img is None:
-    #         bmp = wx.NullBitmap
-    #     else:
-    #         windowsize = self.client.GetSize()
-    #         # print(windowsize, self.splitter.GetSashPosition(), self.right_splitter.GetSashPosition())
-    #         if index == 0:
-    #             w = self.splitter.GetSashPosition()
-    #             h = windowsize.y
-    #         elif index == 1:
-    #             w = windowsize.x - self.splitter.GetSashPosition()
-    #             h = self.right_splitter.GetSashPosition()
-    #         else:  # index == 2
-    #             w = windowsize.x - self.splitter.GetSashPosition()
-    #             h = windowsize.y - self.right_splitter.GetSashPosition()
-    #         img = rescale(img, w, h)
-    #         bmp = wx.Bitmap(img)
-    #     self.bitmaps[index].SetBitmap(bmp)
-
     def OnSetImage(self, event):
         self.panels[event.index].SetImage(event.image)
 
@@ -367,7 +331,10 @@ class MainFrame(wx.Frame):
         webbrowser.open('https://github.com/noword/image2sgf')
 
     def OnOptionClick(self, event):
-        with OptionDialog(self.config, self, -1, _('Option')) as dlg:
+        with OptionDialog(self.config.copy(), self, -1, _('Option')) as dlg:
             dlg.CenterOnParent()
             if dlg.ShowModal() == wx.ID_OK:
+                if self.config['theme'] != dlg.config['theme'] and not self.sgf_panel.IsEmpty():
+                    img = self.__GetBoardImageFromSgf(self.sgf, dlg.config['theme'])
+                    wx.PostEvent(self, NewImageEvent(2, img))
                 self.config = dlg.config
