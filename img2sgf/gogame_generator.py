@@ -20,6 +20,29 @@ class BoardGenerator(GameImageGenerator):
         return img, labels, boxes
 
 
+class PartBoardGenerator(GameImageGenerator):
+    def get_game_image(self, sgf_path, img_size=1024, start_number=None, start=None, end=None, part_rect=None):
+        img = super(PartBoardGenerator, self).get_game_image(sgf_path, img_size, start_number, start, end, part_rect)
+        if part_rect is None:
+            part_rect = [1, 1, 19, 19]
+
+        print(part_rect)
+        part_rect = [x if x == 0 else x - 1 for x in part_rect]
+        box_pos = BoxPostion(self.DEFAULT_WIDTH, 19)
+        x0, y0, x1, y1 = part_rect
+        labels = [x0 + y0 * 19 + 1, x1 + y0 * 19 + 1, x0 + y1 * 19 + 1, x1 + y1 * 19 + 1]
+        boxes = [box_pos[y0][x0], box_pos[y0][x1], box_pos[y1][x0], box_pos[y1][x1]]
+        x0_offset, y0_offset, _, _ = box_pos[y1][x0]
+        if y1 >= 18:
+            y0_offset = 0
+        if x0 <= 0:
+            x0_offset = 0
+        boxes = [[_x0 - x0_offset, _y0 - y0_offset, _x1 - x0_offset, _y1 - y0_offset] for _x0, _y0, _x1, _y1 in boxes]
+        print(x0_offset, y0_offset, part_rect)
+
+        return img, labels, boxes
+
+
 def get_stone_mask_box(img):
     alpha = img.getchannel('A')
     alpha = alpha.point(lambda x: 1 if x == 255 else 0)
@@ -65,6 +88,9 @@ class GogameGenerator(GameImageGenerator):
 
         stone_mask, box = get_stone_mask_box(self.get_stone_image('b', board.side))
         # masks = []
+        if part_rect:
+            part_rect = [x - 1 for x in part_rect]
+
         labels = []
         boxes = []
 
@@ -200,4 +226,8 @@ class RandomGogameGenerator(RandomGenerator, GogameGenerator):
 
 
 class RandomBoardGenerator(RandomGenerator, BoardGenerator):
+    pass
+
+
+class RandomPartBoardGenerator(RandomGenerator, PartBoardGenerator):
     pass

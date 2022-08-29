@@ -1,4 +1,4 @@
-from .gogame_generator import GogameGenerator, RandomGogameGenerator, RandomBoardGenerator
+from .gogame_generator import GogameGenerator, RandomGogameGenerator, RandomBoardGenerator, RandomPartBoardGenerator
 from .misc import get_xy, S
 from .sgf2img import GetAllThemes
 import random
@@ -180,30 +180,37 @@ class RandomPartGogameDataset(RandomGogameDataset):
             pass
         elif r == 1:
             # top left
-            part_rect = [0, r1, r2, side]
+            part_rect = [1, r1, r2, side]
         elif r == 2:
             # bottom left
-            part_rect = [0, 0, r1, r2]
+            part_rect = [1, 1, r1, r2]
         elif r == 3:
             # top right
             part_rect = [r1, r2, side, side]
         elif r == 4:
             # bottom right
-            part_rect = [r1, 0, side, r2]
+            part_rect = [r1, 1, side, r2]
         elif r == 5:
             # top
-            part_rect = [0, r1, side, side]
+            part_rect = [1, r1, side, side]
         elif r == 6:
             # bottom
-            part_rect = [0, 0, side, r1]
+            part_rect = [1, 1, side, r1]
         elif r == 7:
             # left
-            part_rect = [0, 0, r1, side]
+            part_rect = [1, 1, r1, side]
         elif r == 8:
             # right
-            part_rect = [r1, 0, side, side]
+            part_rect = [r1, 1, side, side]
 
         return part_rect
+
+
+class RandomPartBoardDataset(RandomPartGogameDataset):
+    @property
+    def _generator(self):
+        theme = self.themes[random.randint(0, len(self.themes) - 1)]
+        return RandomPartBoardGenerator(hands_num=self.hands_num, theme=theme, with_coordinates=bool(random.getrandbits(1)))
 
 
 def gen_cache(dataset, path):
@@ -255,9 +262,3 @@ class CachedDataset:
 #         img = cv2.Canny(img, 50, 150)
 #         img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 #         return transforms.ToTensor()(img)
-
-
-if __name__ == '__main__':
-    from model import get_transform
-    d = RandomBoardDataset(transforms=get_transform(True))
-    d.show()

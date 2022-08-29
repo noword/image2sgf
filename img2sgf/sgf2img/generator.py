@@ -314,17 +314,20 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
         if part_rect:
             rect = []
             part_rect[1], part_rect[3] = part_rect[3], part_rect[1]
-            for i in part_rect:
-                if i <= 1:
+            for i, p in enumerate(part_rect):
+                if p <= 1:
                     v = 0
-                elif i >= board.side - 1:
+                elif p >= board.side - 1:
                     v = img_size
                 else:
-                    v = grid_pos[i][i].x + grid_pos.half_grid_size
+                    if i == 1 or i == 2:
+                        v = grid_pos[p][p].x + grid_pos.half_grid_size
+                    else:
+                        v = grid_pos[p][p].x - grid_pos.half_grid_size
                 rect.append(v)
 
             rect[1] = img_size - rect[1]
             rect[3] = img_size - rect[3]
-
+            print(rect)
             board_image = board_image.crop(rect)
         return board_image

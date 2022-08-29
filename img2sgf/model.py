@@ -25,7 +25,7 @@ def get_stone_model(name='stone.pth'):
 def get_part_board_model(name='part_board.pth', thresh=0.3):
     # failed, it's not working
     model = models.detection.fcos_resnet50_fpn(num_classes=19 * 19 + 1,
-                                               detections_per_img=18 * 18,
+                                               detections_per_img=8,
                                                score_thresh=thresh,
                                                weights_backbone=None)
     return __load_state_dict(model, name)
