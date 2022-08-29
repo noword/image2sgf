@@ -328,6 +328,6 @@ class GameImageGenerator(BoardImageGenerator, StoneImageGenerator):
 
             rect[1] = img_size - rect[1]
             rect[3] = img_size - rect[3]
-            print(rect)
+            # print(rect)
             board_image = board_image.crop(rect)
         return board_image

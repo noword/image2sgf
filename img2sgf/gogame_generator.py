@@ -26,7 +26,7 @@ class PartBoardGenerator(GameImageGenerator):
         if part_rect is None:
             part_rect = [1, 1, 19, 19]
 
-        print(part_rect)
+        # print(part_rect)
         part_rect = [x if x == 0 else x - 1 for x in part_rect]
         box_pos = BoxPostion(self.DEFAULT_WIDTH, 19)
         x0, y0, x1, y1 = part_rect
@@ -38,7 +38,7 @@ class PartBoardGenerator(GameImageGenerator):
         if x0 <= 0:
             x0_offset = 0
         boxes = [[_x0 - x0_offset, _y0 - y0_offset, _x1 - x0_offset, _y1 - y0_offset] for _x0, _y0, _x1, _y1 in boxes]
-        print(x0_offset, y0_offset, part_rect)
+        # print(x0_offset, y0_offset, part_rect)
 
         return img, labels, boxes
 

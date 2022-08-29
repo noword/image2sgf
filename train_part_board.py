@@ -15,16 +15,16 @@ def main(pth_name, hands_num=(1, 361), batch_size=5, num_workers=1, data_size=10
     model = get_part_board_model()
     model.to(device)
 
-    dataset = RandomPartGogameDataset(initvar=data_size, hands_num=hands_num, transforms=get_part_transform(train=True))
+    dataset = RandomPartBoardDataset(initvar=data_size, hands_num=hands_num, transforms=get_part_transform(train=True))
     data_loader = torch.utils.data.DataLoader(dataset,
                                               batch_size=batch_size,
                                               shuffle=True,
                                               num_workers=num_workers,
                                               collate_fn=utils.collate_fn)
 
-    dataset_test = RandomPartGogameDataset(initvar=int(data_size * 0.1),
-                                           hands_num=hands_num,
-                                           transforms=get_part_transform(train=True))
+    dataset_test = RandomPartBoardDataset(initvar=int(data_size * 0.1),
+                                          hands_num=hands_num,
+                                          transforms=get_part_transform(train=True))
 
     data_loader_test = torch.utils.data.DataLoader(dataset_test,
                                                    batch_size=1,
