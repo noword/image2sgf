@@ -37,7 +37,11 @@ class PartBoardGenerator(GameImageGenerator):
             y0_offset = 0
         if x0 <= 0:
             x0_offset = 0
-        boxes = [[_x0 - x0_offset, _y0 - y0_offset, _x1 - x0_offset, _y1 - y0_offset] for _x0, _y0, _x1, _y1 in boxes]
+        g = box_pos.grid_size / 4
+        boxes = [[_x0 - x0_offset + g,
+                  _y0 - y0_offset + g,
+                  _x1 - x0_offset - g,
+                  _y1 - y0_offset - g] for _x0, _y0, _x1, _y1 in boxes]
         # print(x0_offset, y0_offset, part_rect)
 
         return img, labels, boxes
