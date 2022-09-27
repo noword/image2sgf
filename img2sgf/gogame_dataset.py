@@ -29,8 +29,6 @@ class GogameDataset(torch.utils.data.Dataset):
             bold_theme._theme['bold_border'] = 1
             bold_themes.append(bold_theme)
         self.themes += bold_themes
-        for t in self.themes:
-            print(t['bold_border'])
 
         self.initseed()
         self._initsgfs(initvar)
