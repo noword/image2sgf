@@ -1,6 +1,6 @@
 from .gogame_generator import GogameGenerator, RandomGogameGenerator, RandomBoardGenerator, RandomPartBoardGenerator
 from .misc import get_xy, S
-from .sgf2img import GetAllThemes
+from .sgf2img import GetAllThemes, Theme
 import random
 import numpy as np
 import torch
@@ -22,6 +22,16 @@ class GogameDataset(torch.utils.data.Dataset):
         self.transforms = transforms
         self.sgfs = []
         self.themes = list(GetAllThemes().values())
+        bold_themes = []
+        for t in self.themes:
+            bold_theme = Theme()
+            bold_theme._theme = t._theme.copy()
+            bold_theme._theme['bold_border'] = 1
+            bold_themes.append(bold_theme)
+        self.themes += bold_themes
+        for t in self.themes:
+            print(t['bold_border'])
+
         self.initseed()
         self._initsgfs(initvar)
         assert len(self.sgfs) > 0

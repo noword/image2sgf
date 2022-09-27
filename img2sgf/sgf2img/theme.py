@@ -33,6 +33,9 @@ class Theme:
         if 'adjust_ratio' not in self._theme:
             self._theme['adjust_ratio'] = 0
 
+        if 'bold_border' not in self._theme:
+            self._theme['bold_border'] = 0
+
     def __getitem__(self, key):
         return self._theme.get(key)
 

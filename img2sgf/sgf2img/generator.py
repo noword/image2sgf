@@ -125,6 +125,11 @@ class BoardImageGenerator(BaseGenerator):
             draw.line((grid_pos[i][0].x, grid_pos[i][0].y, grid_pos[i][-1].x, grid_pos[i][0].y), self.theme['line_color'])
             draw.line((grid_pos[0][i].x, grid_pos[0][i].y, grid_pos[-1][i].x, grid_pos[-1][i].y), self.theme['line_color'])
 
+        if self.theme['bold_border']:
+            draw.rectangle((grid_pos[0][0].x, grid_pos[0][0].y, grid_pos[-1][-1].x, grid_pos[-1][-1].y),
+                           outline=self.theme['line_color'],
+                           width=3)
+
         # draw stars
         start_size = self.DEFAULT_WIDTH * 0.005
         for x in grid_pos.star_coords:
