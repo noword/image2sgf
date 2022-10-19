@@ -204,7 +204,7 @@ class RandomGenerator:
     def set_random_scaling_ratio(self):
         stone_mask, box = get_stone_mask_box(self.get_stone_image('b', 19))
         gp = GridPosition(self.DEFAULT_WIDTH, 19, self.BOARD_RATE)
-        self.theme._theme['scaling_ratio'] *= random.uniform(1, (gp.grid_size - 3) / (box[2] - box[0]))
+        self.theme.scaling_ratio *= random.uniform(1, (gp.grid_size - 3) / (box[2] - box[0]))
 
     def _get_sgf_info(self, sgf_path, end=None):
         if self._board is None:

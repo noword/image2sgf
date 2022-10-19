@@ -13,8 +13,7 @@ from datetime import datetime
 from PIL import ImageDraw
 import os
 import json
-# import cv2
-# import torchvision.transforms as transforms
+import dataclasses
 
 
 class GogameDataset(torch.utils.data.Dataset):
@@ -24,9 +23,8 @@ class GogameDataset(torch.utils.data.Dataset):
         self.themes = list(GetAllThemes().values())
         bold_themes = []
         for t in self.themes:
-            bold_theme = Theme()
-            bold_theme._theme = t._theme.copy()
-            bold_theme._theme['bold_border'] = 1
+            bold_theme = dataclasses.replace(t)
+            bold_theme.bold_border = 1
             bold_themes.append(bold_theme)
         self.themes += bold_themes
 
