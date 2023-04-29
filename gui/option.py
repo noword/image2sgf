@@ -1,5 +1,5 @@
 import wx
-from img2sgf.sgf2img import GetAllThemes, Theme, GameImageGenerator
+from img2sgf.sgf2img import GetAllThemes, GameImageGenerator
 
 _ = wx.GetTranslation
 
@@ -61,7 +61,7 @@ class OptionDialog(wx.Dialog):
         self.config['language'] = d.get(event.GetString(), wx.LANGUAGE_DEFAULT)
 
     def __set_theme_image(self, theme):
-        gig = GameImageGenerator(Theme(theme))
+        gig = GameImageGenerator(GetAllThemes()[theme])
         sgf_image = gig.get_game_image(b'(;GM[1]FF[4]KM[6.5]SZ[19]AB[pd][dp]AW[pp][dd])')
         img = sgf_image.resize((480, 480))
         self.bmp.SetBitmap(wx.Bitmap.FromBuffer(*img.size, img.tobytes()))

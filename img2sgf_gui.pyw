@@ -12,7 +12,7 @@ class App(wx.App):
 
 def run():
     app = App(True, 'img2sgf.log')
-    frame = MainFrame(None, title='img2sgf v0.06')
+    frame = MainFrame(None, title='img2sgf v0.07')
     frame.Show()
     app.MainLoop()
 

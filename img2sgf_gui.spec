@@ -2,7 +2,7 @@
 
 
 block_cipher = None
-
+import sys ; sys.setrecursionlimit(sys.getrecursionlimit() * 5)
 
 a = Analysis(
     ['img2sgf_gui.pyw'],
@@ -13,7 +13,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['PyQt5', 'PyQt6', 'PySide6', 'pandas', 'matplotlib', 'torch.distributions', 'torchaudio', 'IPython', 'tcl', 'tcl8', 'tk', 'scipy', 'FixTk', '_tkinter', 'tkinter', 'Tkinter'],
+    excludes=['tensorflow', 'PyQt5', 'PyQt6', 'PySide6', 'pandas', 'matplotlib', 'torch.distributions', 'torchaudio', 'IPython', 'tcl', 'tcl8', 'tk', 'scipy', 'FixTk', '_tkinter', 'tkinter', 'Tkinter'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -40,7 +40,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=True,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,

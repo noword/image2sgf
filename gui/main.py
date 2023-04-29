@@ -9,7 +9,7 @@ import webbrowser
 from .config import Config
 from .option import OptionDialog
 from img2sgf import get_board_model, get_stone_model, get_board_image, classifier_board, get_sgf, NpBoxPostion, DEFAULT_IMAGE_SIZE
-from img2sgf.sgf2img import GameImageGenerator, Theme, GetAllThemes
+from img2sgf.sgf2img import GameImageGenerator, GetAllThemes
 import numpy
 from .widgets import ImagePanel
 
@@ -162,7 +162,6 @@ class MainFrame(wx.Frame):
         self.status.SetStatusText(_('step 3: generating sgf'))
 
         self.sgf = get_sgf(self.board)
-
         try:
             img = self.__GetBoardImageFromSgf(self.sgf, self.config['theme'])
         except BaseException as err:
@@ -193,7 +192,7 @@ class MainFrame(wx.Frame):
         return bmp.ConvertToImage()
 
     def __GetBoardImageFromSgf(self, sgf, theme):
-        gig = GameImageGenerator(Theme(theme))
+        gig = GameImageGenerator(GetAllThemes()[theme])
         sgf_image = gig.get_game_image(sgf.serialise())
         return sgf_image
 
