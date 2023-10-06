@@ -144,7 +144,9 @@ class BoardImageGenerator(BaseGenerator):
         if self.with_coordinates:
             # draw coordinates
             grid_size = grid_pos.grid_size
-            fw, fh = self.font.getsize('A')
+            left, top, right, bottom = self.font.getbbox('A')
+            fw = right - left
+            fh = bottom - top
             for i in range(size):
                 draw.text((grid_pos[0][i].x, grid_pos[0][i].y + grid_size),
                           chr(ord('A') + i),

@@ -183,6 +183,7 @@ class MainFrame(wx.Frame):
         font = wx.Font()
         font.SetPixelSize(wx.Size(0, font_size))
         dc.SetFont(font)
+        boxes = boxes.astype(numpy.int64)
         rects = [[box[0], box[1], box[2] - box[0], box[3] - box[1]] for box in boxes]
         dc.DrawRectangleList(rects, wx.Pen('green', width=font_size // 5), wx.Brush('green', wx.TRANSPARENT))
 
@@ -312,7 +313,7 @@ class MainFrame(wx.Frame):
                 dc.SetFont(font)
                 dc.DrawText(str(i), 240, 112)
 
-                del(dc)
+                del (dc)
 
                 img = bmp.ConvertToImage()
                 wx.PostEvent(self, NewImageEvent(0, img))
