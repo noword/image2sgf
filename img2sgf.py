@@ -10,7 +10,16 @@ def demo(pil_img, save_images=False):
     if isinstance(pil_img, str):
         pil_img = Image.open(pil_img).convert('RGB')
     print('1st perspective')
-    img0, boxes0, scores0 = get_board_image(board_model, pil_img)
+    try:
+        img0, boxes0, scores0 = get_board_image(board_model, pil_img)
+    except BaseException:
+        try:
+            img0, boxes0, scores0 = get_board_image(board_model, pil_img, False)
+        except BaseException as err:
+            self.status.SetStatusText(_("Error: Can't identify the board."))
+            print(err)
+            return
+
     print('2nd perspective')
     img1, boxes1, scores1 = get_board_image(board_model, img0)
     img = img0 if sum(scores0) > sum(scores1) else img1
